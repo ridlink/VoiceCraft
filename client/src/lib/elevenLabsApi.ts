@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TtsRequest } from "@shared/schema";
 
-export async function generateSpeech(data: TtsRequest): Promise<ArrayBuffer> {
+export async function generateSpeech(data: TtsRequest): Promise<any> {
   const response = await fetch("/api/text-to-speech", {
     method: "POST",
     headers: {

@@ -19,9 +19,16 @@ export default function Home() {
     voiceId: string;
   } | null>(null);
   const [selectedVoice, setSelectedVoice] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Type for API status
+  interface ApiStatus {
+    status: string;
+    message: string;
+  }
 
   // Fetch API status
-  const { data: apiStatus } = useQuery({
+  const { data: apiStatus } = useQuery<ApiStatus>({
     queryKey: ["/api/status"],
     refetchInterval: 300000, // Check every 5 minutes
     onError: () => {
@@ -36,7 +43,7 @@ export default function Home() {
   // Fetch voices
   const { data: voices, isLoading: isLoadingVoices, error: voicesError } = useQuery<Voice[]>({
     queryKey: ["/api/voices"],
-    onSuccess: (data) => {
+    onSuccess: (data: Voice[]) => {
       if (data.length > 0 && !selectedVoice) {
         setSelectedVoice(data[0].id);
       }
@@ -70,6 +77,8 @@ export default function Home() {
 
   const playRecentGeneration = async (generation: AudioGeneration) => {
     try {
+      setIsLoading(true);
+      
       // We would need to regenerate the audio since we don't store the actual audio data
       const res = await apiRequest("POST", "/api/text-to-speech", {
         text: generation.text,
@@ -78,27 +87,40 @@ export default function Home() {
         clarity: generation.clarity || 70,
       });
       
+      // Make sure the response is properly handled
+      if (!res.ok) {
+        throw new Error("Failed to regenerate audio");
+      }
+      
       const data = await res.json();
+      
+      if (!data.audio) {
+        throw new Error("No audio data received");
+      }
+      
+      // Set the voice first, then the audio data
+      setSelectedVoice(generation.voiceId);
       
       setAudioData({
         audio: data.audio,
-        format: data.format,
+        format: data.format || "mp3",
         text: generation.text,
         voiceId: generation.voiceId,
       });
-      
-      setSelectedVoice(generation.voiceId);
       
       toast({
         title: "Audio Loaded",
         description: "Previously generated audio has been loaded.",
       });
     } catch (error) {
+      console.error("Error playing recent generation:", error);
       toast({
         variant: "destructive",
         title: "Error Loading Audio",
         description: "Failed to load the previous generation. Please try generating it again.",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 

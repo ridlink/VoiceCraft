@@ -35,7 +35,7 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
     downloadAudio,
     isLoading
   } = useAudioPlayer(
-    audioData ? `data:audio/${audioData.format};base64,${audioData.audio}` : null
+    audioData && audioData.audio ? `data:audio/${audioData.format};base64,${audioData.audio}` : null
   );
 
   // Find the selected voice name

@@ -19,8 +19,17 @@ export default function useAudioPlayer(audioSrc: string | null) {
       setCurrentTime(0);
       setDuration(0);
       
+      // Set the new audio source
       audioRef.current.src = audioSrc;
       audioRef.current.load();
+      
+      // Add a console log to help with debugging
+      console.log("Audio source updated:", audioSrc.substring(0, 50) + "...");
+    } else if (!audioSrc && audioRef.current) {
+      // Clear the audio source if none is provided
+      audioRef.current.src = "";
+      audioRef.current.load();
+      setIsLoading(false);
     }
   }, [audioSrc]);
 
@@ -123,18 +132,54 @@ export default function useAudioPlayer(audioSrc: string | null) {
   const downloadAudio = (format: string) => {
     if (!audioSrc) return;
     
-    // Create a temporary <a> element to trigger download
-    const a = document.createElement("a");
-    a.href = audioSrc;
-    a.download = `voicecraft-audio.${format}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    
-    toast({
-      title: "Download Started",
-      description: `Your audio is being downloaded in ${format.toUpperCase()} format.`,
-    });
+    try {
+      // Extract the base64 data from data URL
+      const base64Data = audioSrc.split(',')[1];
+      
+      // Create a Blob from the base64 data
+      const byteCharacters = atob(base64Data);
+      const byteArrays = [];
+      
+      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        const slice = byteCharacters.slice(offset, offset + 512);
+        
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i);
+        }
+        
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+      }
+      
+      const blob = new Blob(byteArrays, { type: `audio/${format}` });
+      const blobUrl = URL.createObjectURL(blob);
+      
+      // Create a temporary <a> element to trigger download
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `voicecraft-audio.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // Clean up the blob URL
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+      }, 100);
+      
+      toast({
+        title: "Download Started",
+        description: `Your audio is being downloaded in ${format.toUpperCase()} format.`,
+      });
+    } catch (error) {
+      console.error("Download error:", error);
+      toast({
+        variant: "destructive",
+        title: "Download Failed",
+        description: "There was an error downloading the audio. Please try again.",
+      });
+    }
   };
 
   return {
