@@ -30,6 +30,7 @@ export interface IStorage {
   getUserAudioGenerations(userId: number, limit?: number): Promise<AudioGeneration[]>;
   getAudioGeneration(id: number): Promise<AudioGeneration | undefined>;
   updateAudioGenerationDownloadCount(id: number): Promise<void>;
+  deleteAudioGeneration(id: number): Promise<void>;
   
   // Session store for authentication
   sessionStore: session.Store;
@@ -227,6 +228,11 @@ export class DatabaseStorage implements IStorage {
         .set({ downloadCount: (generation.downloadCount || 0) + 1 })
         .where(eq(audioGenerations.id, id));
     }
+  }
+  
+  async deleteAudioGeneration(id: number): Promise<void> {
+    await db.delete(audioGenerations)
+      .where(eq(audioGenerations.id, id));
   }
 }
 

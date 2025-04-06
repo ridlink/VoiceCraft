@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -12,6 +12,7 @@ import type { Voice, AudioGeneration } from "@shared/schema";
 
 export default function Home() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [audioData, setAudioData] = useState<{
     audio: string;
     format: string;
@@ -128,6 +129,45 @@ export default function Home() {
   };
 
   const apiConnected = apiStatus?.status === "connected";
+  
+  // Delete audio generation mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (generationId: number) => {
+      const response = await apiRequest("DELETE", `/api/generations/${generationId}`);
+      if (!response.ok) {
+        throw new Error("Failed to delete generation");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate the generations query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/generations"] });
+      
+      toast({
+        title: "Generation Deleted",
+        description: "The audio generation has been successfully deleted.",
+      });
+      
+      // If the current audio is from the deleted generation, clear it
+      if (audioData) {
+        setAudioData(null);
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Delete Failed",
+        description: error.message || "Failed to delete the generation. Please try again.",
+      });
+    }
+  });
+  
+  // Handle deleting a generation
+  const handleDeleteGeneration = (generation: AudioGeneration) => {
+    if (generation.id) {
+      deleteMutation.mutate(generation.id);
+    }
+  };
   
   // Handle downloading a recent generation
   const downloadRecentGeneration = async (generation: AudioGeneration, format: string) => {
@@ -255,6 +295,7 @@ export default function Home() {
               generations={recentGenerations || []}
               onPlay={playRecentGeneration}
               onDownload={downloadRecentGeneration}
+              onDelete={handleDeleteGeneration}
             />
           </div>
         </div>

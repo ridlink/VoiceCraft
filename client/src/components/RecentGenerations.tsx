@@ -5,20 +5,24 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import type { AudioGeneration } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
+import { Trash2 } from "lucide-react";
 
 type RecentGenerationsProps = {
   generations: AudioGeneration[];
   onPlay: (generation: AudioGeneration) => void;
   onDownload?: (generation: AudioGeneration, format: string) => void;
+  onDelete?: (generation: AudioGeneration) => void;
 };
 
 export default function RecentGenerations({ 
   generations, 
   onPlay,
-  onDownload
+  onDownload,
+  onDelete
 }: RecentGenerationsProps) {
   const formatDate = (date: Date | null) => {
     if (!date) return "Unknown time";
@@ -78,6 +82,19 @@ export default function RecentGenerations({
                         <i className="ri-file-music-line mr-2"></i>
                         Download WAV
                       </DropdownMenuItem>
+                      
+                      {onDelete && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => onDelete(item)}
+                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 ) : (

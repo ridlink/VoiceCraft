@@ -179,6 +179,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete audio generation
+  app.delete("/api/generations/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const generationId = parseInt(req.params.id);
+      
+      if (isNaN(generationId)) {
+        return res.status(400).json({ error: "Invalid generation ID" });
+      }
+      
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      
+      // Verify the generation exists
+      const generation = await storage.getAudioGeneration(generationId);
+      
+      if (!generation) {
+        return res.status(404).json({ error: "Generation not found" });
+      }
+      
+      // Check if the user owns this generation or is an admin
+      if (generation.userId !== userId) {
+        return res.status(403).json({ error: "Not authorized to delete this generation" });
+      }
+      
+      // Delete the generation
+      await storage.deleteAudioGeneration(generationId);
+      
+      return res.status(200).json({ 
+        success: true,
+        message: "Generation deleted successfully" 
+      });
+    } catch (error) {
+      console.error("Error deleting generation:", error);
+      return res.status(500).json({ 
+        message: "Failed to delete generation",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // API Status check
   app.get("/api/status", async (_req: Request, res: Response) => {
     try {
