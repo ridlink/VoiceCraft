@@ -17,6 +17,7 @@ export default function Home() {
     format: string;
     text: string;
     voiceId: string;
+    contentType?: string;
   } | null>(null);
   const [selectedVoice, setSelectedVoice] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -71,6 +72,7 @@ export default function Home() {
     format: string;
     text: string;
     voiceId: string;
+    contentType?: string;
   }) => {
     setAudioData(generationData);
   };
@@ -106,6 +108,7 @@ export default function Home() {
         format: data.format || "mp3",
         text: generation.text,
         voiceId: generation.voiceId,
+        contentType: data.contentType || "audio/mpeg" // Include the content type for proper audio handling
       });
       
       toast({

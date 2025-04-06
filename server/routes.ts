@@ -91,10 +91,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         duration: Math.ceil(response.headers['content-length'] ? parseInt(response.headers['content-length']) / 1024 / 16 : 0) // Estimate duration in seconds
       });
       
+      // Return audio data with detailed media type
       return res.json({
         id: audioGeneration.id,
         audio: audioBase64,
-        format: "mp3"
+        format: "mp3",
+        contentType: "audio/mpeg" // Specify proper content type for clearer media handling
       });
     } catch (error) {
       console.error("Error generating speech:", error);

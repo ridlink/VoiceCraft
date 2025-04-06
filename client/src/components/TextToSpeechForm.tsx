@@ -38,6 +38,7 @@ type TextToSpeechFormProps = {
     format: string;
     text: string;
     voiceId: string;
+    contentType?: string;
   }) => void;
   apiConnected: boolean;
 };
@@ -83,6 +84,7 @@ export default function TextToSpeechForm({
         format: data.format,
         text: form.getValues("text"),
         voiceId: form.getValues("voiceId"),
+        contentType: data.contentType || "audio/mpeg"
       });
     },
     onError: (error) => {

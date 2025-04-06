@@ -17,6 +17,7 @@ type AudioPlayerProps = {
     format: string;
     text: string;
     voiceId: string;
+    contentType?: string;
   } | null;
   selectedVoice: string;
   voices: Voice[];
@@ -35,7 +36,9 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
     downloadAudio,
     isLoading
   } = useAudioPlayer(
-    audioData && audioData.audio ? `data:audio/${audioData.format};base64,${audioData.audio}` : null
+    audioData && audioData.audio ? 
+      `data:${audioData.contentType || `audio/${audioData.format}`};base64,${audioData.audio}` : 
+      null
   );
 
   // Find the selected voice name
@@ -64,11 +67,11 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
             <div className="mb-4">
               <AudioWaveform isActive={true} />
             </div>
-            <h3 className="font-medium text-gray-700 mb-1">Generating audio...</h3>
+            <h3 className="font-medium text-gray-700 mb-1">Processing audio...</h3>
             <div className="w-full max-w-xs bg-gray-200 rounded-full h-2.5 my-2">
-              <div className="bg-primary-600 h-2.5 rounded-full animate-pulse" style={{ width: "45%" }}></div>
+              <div className="bg-primary-600 h-2.5 rounded-full animate-pulse" style={{ width: "60%" }}></div>
             </div>
-            <p className="text-sm text-gray-500">This may take a few moments</p>
+            <p className="text-sm text-gray-500">Preparing your audio for playback</p>
           </div>
         )}
         
