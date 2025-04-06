@@ -129,6 +129,80 @@ export default function Home() {
 
   const apiConnected = apiStatus?.status === "connected";
   
+  // Handle downloading a recent generation
+  const downloadRecentGeneration = async (generation: AudioGeneration, format: string) => {
+    try {
+      setIsLoading(true);
+      
+      // We need to regenerate the audio since we don't store the actual audio data
+      const res = await apiRequest("POST", "/api/text-to-speech", {
+        text: generation.text,
+        voiceId: generation.voiceId,
+        stability: generation.stability || 50,
+        clarity: generation.clarity || 70,
+      });
+      
+      if (!res.ok) {
+        throw new Error("Failed to regenerate audio for download");
+      }
+      
+      const data = await res.json();
+      
+      if (!data.audio) {
+        throw new Error("No audio data received for download");
+      }
+      
+      // Create a blob URL and trigger download
+      const base64Data = data.audio;
+      const byteCharacters = atob(base64Data);
+      const byteArrays = [];
+      
+      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        const slice = byteCharacters.slice(offset, offset + 512);
+        
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i);
+        }
+        
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+      }
+      
+      // Use the correct MIME type for the download
+      const mimeType = format === 'mp3' ? 'audio/mpeg' : `audio/${format}`;
+      const blob = new Blob(byteArrays, { type: mimeType });
+      const blobUrl = URL.createObjectURL(blob);
+      
+      // Create a temporary <a> element to trigger download
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `voicecraft-${generation.text.substring(0, 20).replace(/[^a-z0-9]/gi, '-')}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // Clean up the blob URL
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+      }, 100);
+      
+      toast({
+        title: "Download Started",
+        description: `Your audio is being downloaded in ${format.toUpperCase()} format.`,
+      });
+    } catch (error) {
+      console.error("Error downloading generation:", error);
+      toast({
+        variant: "destructive",
+        title: "Download Failed",
+        description: "Failed to download the audio. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -180,6 +254,7 @@ export default function Home() {
             <RecentGenerations 
               generations={recentGenerations || []}
               onPlay={playRecentGeneration}
+              onDownload={downloadRecentGeneration}
             />
           </div>
         </div>

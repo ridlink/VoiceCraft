@@ -1,17 +1,28 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { AudioGeneration } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 
 type RecentGenerationsProps = {
   generations: AudioGeneration[];
   onPlay: (generation: AudioGeneration) => void;
+  onDownload?: (generation: AudioGeneration, format: string) => void;
 };
 
-export default function RecentGenerations({ generations, onPlay }: RecentGenerationsProps) {
+export default function RecentGenerations({ 
+  generations, 
+  onPlay,
+  onDownload
+}: RecentGenerationsProps) {
   const formatDate = (date: Date | null) => {
     if (!date) return "Unknown time";
-    return formatDistanceToNow(date, { addSuffix: true });
+    return formatDistanceToNow(new Date(date), { addSuffix: true });
   };
 
   return (
@@ -48,9 +59,37 @@ export default function RecentGenerations({ generations, onPlay }: RecentGenerat
                   </div>
                 </div>
                 
-                <Button variant="ghost" className="text-gray-400 hover:text-gray-600 p-0 w-8 h-8">
-                  <i className="ri-download-2-line"></i>
-                </Button>
+                {onDownload ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        className="text-gray-400 hover:text-gray-600 p-0 w-8 h-8"
+                      >
+                        <i className="ri-download-2-line"></i>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onDownload(item, "mp3")}>
+                        <i className="ri-file-music-line mr-2"></i>
+                        Download MP3
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onDownload(item, "wav")}>
+                        <i className="ri-file-music-line mr-2"></i>
+                        Download WAV
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button 
+                    variant="ghost" 
+                    className="text-gray-400 hover:text-gray-600 p-0 w-8 h-8"
+                    onClick={() => onPlay(item)}
+                    title="Play first to enable download"
+                  >
+                    <i className="ri-download-2-line"></i>
+                  </Button>
+                )}
               </div>
             ))}
           </div>
