@@ -114,17 +114,53 @@ export class DatabaseStorage implements IStorage {
 
   async saveVoices(voicesData: InsertVoice[]): Promise<void> {
     for (const voice of voicesData) {
-      // Check if voice exists
-      const [existingVoice] = await db.select().from(voices).where(eq(voices.id, voice.id));
-      
-      if (!existingVoice) {
-        await db.insert(voices).values(voice);
-        // Initialize voice stats
-        await db.insert(voiceStats).values({
-          voiceId: voice.id,
-          useCount: 0,
-          averageRating: null
-        });
+      try {
+        // Check if voice exists
+        const [existingVoice] = await db.select().from(voices).where(eq(voices.id, voice.id));
+        
+        if (!existingVoice) {
+          // Insert new voice with all fields
+          await db.insert(voices).values({
+            id: voice.id,
+            name: voice.name,
+            description: voice.description,
+            language: voice.language,
+            category: voice.category,
+            premium: voice.premium,
+            previewUrl: voice.previewUrl,
+            accent: voice.accent,
+            age: voice.age,
+            gender: voice.gender,
+            useCase: voice.useCase,
+            labels: voice.labels,
+          });
+          
+          // Initialize voice stats
+          await db.insert(voiceStats).values({
+            voiceId: voice.id,
+            useCount: 0,
+            averageRating: null
+          });
+        } else {
+          // Update existing voice with new data
+          await db.update(voices)
+            .set({
+              name: voice.name,
+              description: voice.description,
+              language: voice.language,
+              category: voice.category,
+              premium: voice.premium,
+              previewUrl: voice.previewUrl,
+              accent: voice.accent,
+              age: voice.age,
+              gender: voice.gender,
+              useCase: voice.useCase,
+              labels: voice.labels,
+            })
+            .where(eq(voices.id, voice.id));
+        }
+      } catch (error) {
+        console.error(`Error saving voice ${voice.id}:`, error);
       }
     }
   }
@@ -165,7 +201,13 @@ export class DatabaseStorage implements IStorage {
       description: voices.description,
       language: voices.language,
       category: voices.category,
-      premium: voices.premium
+      premium: voices.premium,
+      previewUrl: voices.previewUrl,
+      accent: voices.accent,
+      age: voices.age,
+      gender: voices.gender,
+      useCase: voices.useCase,
+      labels: voices.labels
     })
     .from(voices)
     .leftJoin(voiceStats, eq(voices.id, voiceStats.voiceId))

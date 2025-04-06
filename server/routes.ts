@@ -23,6 +23,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
 
+      // Log the raw response to see all available voice data
+      console.log("Fetched voices from ElevenLabs:", JSON.stringify(response.data.voices[0], null, 2));
+      
       const voices = response.data.voices.map((voice: any) => ({
         id: voice.voice_id,
         name: voice.name,
@@ -30,6 +33,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         language: voice.labels?.language || "English",
         category: voice.category || "standard",
         premium: voice.category === "premium",
+        previewUrl: voice.preview_url,
+        // Store labels as a JSON string
+        labels: JSON.stringify(voice.labels || {}),
+        // Add additional properties for better filtering
+        accent: voice.labels?.accent || null,
+        age: voice.labels?.age || null,
+        gender: voice.labels?.gender || null,
+        useCase: voice.labels?.use_case || null,
       }));
 
       await storage.saveVoices(voices);

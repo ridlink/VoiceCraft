@@ -40,6 +40,14 @@ export const voices = pgTable("voices", {
   language: text("language"),
   category: text("category"),
   premium: boolean("premium").default(false),
+  previewUrl: text("preview_url"),
+  // Additional metadata
+  accent: text("accent"),
+  age: text("age"),
+  gender: text("gender"),
+  useCase: text("use_case"),
+  // Store the full labels object as a JSON string
+  labels: text("labels"),
 });
 
 export const insertVoiceSchema = createInsertSchema(voices);
