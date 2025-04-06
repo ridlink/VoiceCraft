@@ -1,16 +1,32 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  fullName: text("full_name"),
+  avatar: text("avatar"),
+  apiKey: text("api_key"),
+  role: text("role").default("user"),
+  totalGenerations: integer("total_generations").default(0),
+  monthlyQuota: integer("monthly_quota").default(100),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastLoginAt: timestamp("last_login_at"),
 });
+
+export const usersRelations = relations(users, ({ many }) => ({
+  audioGenerations: many(audioGenerations),
+}));
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
+  email: true,
   password: true,
+  fullName: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -39,12 +55,28 @@ export const audioGenerations = pgTable("audio_generations", {
   stability: integer("stability").default(50),
   clarity: integer("clarity").default(70),
   audioUrl: text("audio_url"),
+  format: text("format").default("mp3"),
+  duration: integer("duration"),
+  downloadCount: integer("download_count").default(0),
+  userId: integer("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+export const audioGenerationsRelations = relations(audioGenerations, ({ one }) => ({
+  user: one(users, {
+    fields: [audioGenerations.userId],
+    references: [users.id],
+  }),
+  voice: one(voices, {
+    fields: [audioGenerations.voiceId],
+    references: [voices.id],
+  }),
+}));
 
 export const insertAudioGenerationSchema = createInsertSchema(audioGenerations).omit({
   id: true,
   createdAt: true,
+  downloadCount: true,
 });
 
 export type InsertAudioGeneration = z.infer<typeof insertAudioGenerationSchema>;
@@ -59,3 +91,45 @@ export const ttsRequestSchema = z.object({
 });
 
 export type TtsRequest = z.infer<typeof ttsRequestSchema>;
+
+// User Statistics
+export const userStats = pgTable("user_stats", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  date: date("date").notNull(),
+  generationCount: integer("generation_count").default(0),
+  characterCount: integer("character_count").default(0),
+  audioDuration: integer("audio_duration").default(0), // in seconds
+});
+
+export const userStatsRelations = relations(userStats, ({ one }) => ({
+  user: one(users, {
+    fields: [userStats.userId],
+    references: [users.id],
+  }),
+}));
+
+export const insertUserStatsSchema = createInsertSchema(userStats).omit({
+  id: true,
+});
+
+export type InsertUserStats = z.infer<typeof insertUserStatsSchema>;
+export type UserStats = typeof userStats.$inferSelect;
+
+// Popular Voices Statistics
+export const voiceStats = pgTable("voice_stats", {
+  id: serial("id").primaryKey(),
+  voiceId: text("voice_id").references(() => voices.id).notNull(),
+  useCount: integer("use_count").default(0),
+  averageRating: integer("average_rating"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const voiceStatsRelations = relations(voiceStats, ({ one }) => ({
+  voice: one(voices, {
+    fields: [voiceStats.voiceId],
+    references: [voices.id],
+  }),
+}));
+
+export type VoiceStats = typeof voiceStats.$inferSelect;
