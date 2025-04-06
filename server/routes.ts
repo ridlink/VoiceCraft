@@ -86,9 +86,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert array buffer to base64 for sending to client
       const audioBase64 = Buffer.from(response.data).toString("base64");
       
-      // Get voice name
-      const voice = await storage.getVoice(validatedData.voiceId);
-      const voiceName = voice?.name || "Unknown";
+      // Get voice name (handle missing extended fields gracefully)
+      let voiceName = "Voice";
+      try {
+        const voice = await storage.getVoice(validatedData.voiceId);
+        if (voice && voice.name) {
+          voiceName = voice.name;
+        }
+      } catch (voiceError) {
+        console.error("Error fetching voice details:", voiceError);
+      }
       
       // Save the generation to history with user ID
       const audioGeneration = await storage.saveAudioGeneration({

@@ -29,6 +29,7 @@ export default function VoiceSelector({
   const languages = useMemo(() => {
     const langSet = new Set<string>();
     voices.forEach(voice => {
+      // Handle null values safely
       if (voice.language) {
         langSet.add(voice.language);
       }
@@ -39,18 +40,19 @@ export default function VoiceSelector({
   // Filter voices based on search, language, and category
   const filteredVoices = useMemo(() => {
     return voices.filter(voice => {
-      // Search filter
+      // Search filter - safely handle missing fields
       const matchesSearch = searchQuery === "" || 
-        voice.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (voice.name && voice.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (voice.description && voice.description.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      // Language filter
-      const matchesLanguage = languageFilter === "all" || voice.language === languageFilter;
+      // Language filter - default to "all" if language is missing
+      const matchesLanguage = languageFilter === "all" || 
+        (voice.language && voice.language === languageFilter);
       
-      // Category filter
+      // Category filter - safely handle missing premium field
       const matchesCategory = categoryFilter === "all" || 
-        (categoryFilter === "premium" && voice.premium) ||
-        (categoryFilter === "free" && !voice.premium);
+        (categoryFilter === "premium" && voice.premium === true) ||
+        (categoryFilter === "free" && (voice.premium === false || voice.premium === null));
       
       return matchesSearch && matchesLanguage && matchesCategory;
     });
@@ -137,13 +139,8 @@ export default function VoiceSelector({
                   >
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 flex-shrink-0">
-                        {voice.gender === "female" ? (
-                          <span className="text-xs">♀️</span>
-                        ) : voice.gender === "male" ? (
-                          <span className="text-xs">♂️</span>
-                        ) : (
-                          <span className="text-xs">🎤</span>
-                        )}
+                        {/* Use a microphone icon as default */}
+                        <span className="text-xs">🎤</span>
                       </div>
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-800 text-sm">{voice.name}</h3>
@@ -159,9 +156,6 @@ export default function VoiceSelector({
                             <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
                               {voice.language}
                             </span>
-                          )}
-                          {voice.accent && (
-                            <span className="text-xs text-gray-500">{voice.accent}</span>
                           )}
                         </div>
                       </div>

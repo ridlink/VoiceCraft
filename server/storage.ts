@@ -118,45 +118,33 @@ export class DatabaseStorage implements IStorage {
         // Check if voice exists
         const [existingVoice] = await db.select().from(voices).where(eq(voices.id, voice.id));
         
+        // Prepare a basic voice object with the essential fields
+        const baseVoiceData = {
+          id: voice.id,
+          name: voice.name,
+          description: voice.description,
+          language: voice.language,
+          category: voice.category,
+          premium: voice.premium
+        };
+        
         if (!existingVoice) {
-          // Insert new voice with all fields
-          await db.insert(voices).values({
-            id: voice.id,
-            name: voice.name,
-            description: voice.description,
-            language: voice.language,
-            category: voice.category,
-            premium: voice.premium,
-            previewUrl: voice.previewUrl,
-            accent: voice.accent,
-            age: voice.age,
-            gender: voice.gender,
-            useCase: voice.useCase,
-            labels: voice.labels,
-          });
+          // Insert new voice with minimal fields (compatible with existing schema)
+          await db.insert(voices).values(baseVoiceData);
           
-          // Initialize voice stats
-          await db.insert(voiceStats).values({
-            voiceId: voice.id,
-            useCount: 0,
-            averageRating: null
-          });
+          // Initialize voice stats with only the essential fields
+          try {
+            await db.insert(voiceStats).values({
+              voiceId: voice.id,
+              useCount: 0
+            });
+          } catch (statsError) {
+            console.error(`Error initializing voice stats for ${voice.id}:`, statsError);
+          }
         } else {
-          // Update existing voice with new data
+          // Update existing voice with minimal fields
           await db.update(voices)
-            .set({
-              name: voice.name,
-              description: voice.description,
-              language: voice.language,
-              category: voice.category,
-              premium: voice.premium,
-              previewUrl: voice.previewUrl,
-              accent: voice.accent,
-              age: voice.age,
-              gender: voice.gender,
-              useCase: voice.useCase,
-              labels: voice.labels,
-            })
+            .set(baseVoiceData)
             .where(eq(voices.id, voice.id));
         }
       } catch (error) {
@@ -175,39 +163,39 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateVoiceStats(voiceId: string): Promise<void> {
-    const [existingStat] = await db.select().from(voiceStats).where(eq(voiceStats.voiceId, voiceId));
-    
-    if (existingStat) {
-      await db.update(voiceStats)
-        .set({ 
-          useCount: (existingStat.useCount || 0) + 1,
-          updatedAt: new Date()
-        })
-        .where(eq(voiceStats.voiceId, voiceId));
-    } else {
-      await db.insert(voiceStats).values({
-        voiceId,
-        useCount: 1,
-        updatedAt: new Date()
-      });
+    try {
+      const [existingStat] = await db.select().from(voiceStats).where(eq(voiceStats.voiceId, voiceId));
+      
+      if (existingStat) {
+        // Only update the useCount which we know exists
+        await db.update(voiceStats)
+          .set({ 
+            useCount: (existingStat.useCount || 0) + 1
+          })
+          .where(eq(voiceStats.voiceId, voiceId));
+      } else {
+        // Insert with only essential fields
+        await db.insert(voiceStats).values({
+          voiceId,
+          useCount: 1
+        });
+      }
+    } catch (error) {
+      console.error(`Error updating voice stats for ${voiceId}:`, error);
+      // We already tried with minimal fields, so just log the error
     }
   }
 
-  async getPopularVoices(limit: number = 5): Promise<Voice[]> {
+  async getPopularVoices(limit: number = 5): Promise<any[]> {
     // Join voices with voiceStats and order by useCount
+    // Only select fields that exist in the current database
     const result = await db.select({
       id: voices.id,
       name: voices.name,
       description: voices.description,
       language: voices.language,
       category: voices.category,
-      premium: voices.premium,
-      previewUrl: voices.previewUrl,
-      accent: voices.accent,
-      age: voices.age,
-      gender: voices.gender,
-      useCase: voices.useCase,
-      labels: voices.labels
+      premium: voices.premium
     })
     .from(voices)
     .leftJoin(voiceStats, eq(voices.id, voiceStats.voiceId))
