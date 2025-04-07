@@ -173,57 +173,54 @@ export default function Home() {
     try {
       setIsLoading(true);
       
-      // We need to regenerate the audio since we don't store the actual audio data
-      const res = await apiRequest("POST", "/api/text-to-speech", {
-        text: generation.text,
-        voiceId: generation.voiceId,
-        stability: generation.stability || 50,
-        clarity: generation.clarity || 70,
+      if (!generation.id) {
+        throw new Error("Invalid generation ID");
+      }
+      
+      // First update the download count
+      await fetch(`/api/generations/${generation.id}/increment-download`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
       
-      if (!res.ok) {
-        throw new Error("Failed to regenerate audio for download");
+      // Create a filename for the download
+      const filename = `voicecraft-${generation.text.substring(0, 20).replace(/[^a-z0-9]/gi, '-')}.${format}`;
+      
+      // Direct approach - open a new window/tab with the audio endpoint URL
+      // The browser will handle the download as the Content-Disposition header is set to attachment
+      const apiKey = localStorage.getItem("elevenLabsApiKey");
+      const headers: Record<string, string> = {};
+      
+      if (apiKey) {
+        headers["x-api-key"] = apiKey;
       }
       
-      const data = await res.json();
+      // Fetch the audio data
+      const response = await fetch(`/api/generations/${generation.id}/audio`, { headers });
       
-      if (!data.audio) {
-        throw new Error("No audio data received for download");
+      if (!response.ok) {
+        throw new Error("Failed to fetch audio data for download");
       }
       
-      // Create a blob URL and trigger download
-      const base64Data = data.audio;
-      const byteCharacters = atob(base64Data);
-      const byteArrays = [];
+      // Get the audio blob
+      const blob = await response.blob();
       
-      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-        const slice = byteCharacters.slice(offset, offset + 512);
-        
-        const byteNumbers = new Array(slice.length);
-        for (let i = 0; i < slice.length; i++) {
-          byteNumbers[i] = slice.charCodeAt(i);
-        }
-        
-        const byteArray = new Uint8Array(byteNumbers);
-        byteArrays.push(byteArray);
-      }
+      // Create a URL for the blob
+      const url = URL.createObjectURL(blob);
       
-      // Use the correct MIME type for the download
-      const mimeType = format === 'mp3' ? 'audio/mpeg' : `audio/${format}`;
-      const blob = new Blob(byteArrays, { type: mimeType });
-      const blobUrl = URL.createObjectURL(blob);
-      
-      // Create a temporary <a> element to trigger download
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = `voicecraft-${generation.text.substring(0, 20).replace(/[^a-z0-9]/gi, '-')}.${format}`;
+      // Create a link element and trigger the download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
       
-      // Clean up the blob URL
+      // Clean up
       setTimeout(() => {
-        URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       }, 100);
       
       toast({

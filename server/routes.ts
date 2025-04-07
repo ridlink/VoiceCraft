@@ -204,6 +204,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get audio content for a specific generation
+  app.get("/api/generations/:id/audio", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const generationId = parseInt(req.params.id);
+      
+      if (isNaN(generationId)) {
+        return res.status(400).json({ error: "Invalid generation ID" });
+      }
+      
+      // Verify the generation exists
+      const generation = await storage.getAudioGeneration(generationId);
+      
+      if (!generation) {
+        return res.status(404).json({ error: "Generation not found" });
+      }
+      
+      // Regenerate the audio since we don't store the actual audio in the database
+      const apiKey = getApiKey(req);
+      const response = await axios.post(
+        `${ELEVEN_LABS_API_URL}/text-to-speech/${generation.voiceId}`,
+        {
+          text: generation.text,
+          model_id: "eleven_monolingual_v1",
+          voice_settings: {
+            stability: (generation.stability || 50) / 100,
+            similarity_boost: (generation.clarity || 70) / 100,
+          },
+        },
+        {
+          headers: {
+            "xi-api-key": apiKey,
+            "Content-Type": "application/json",
+            Accept: "audio/mpeg",
+          },
+          responseType: "arraybuffer",
+        }
+      );
+      
+      // Set the appropriate content type header and send the audio data directly
+      res.set("Content-Type", "audio/mpeg");
+      res.set("Content-Disposition", `attachment; filename="voicecraft-${generation.id}.mp3"`);
+      return res.send(response.data);
+      
+    } catch (error) {
+      console.error("Error fetching audio:", error);
+      return res.status(500).json({ 
+        message: "Failed to retrieve audio",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+  
+  // Increment download count for a generation
+  app.post("/api/generations/:id/increment-download", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const generationId = parseInt(req.params.id);
+      
+      if (isNaN(generationId)) {
+        return res.status(400).json({ error: "Invalid generation ID" });
+      }
+      
+      // Verify the generation exists
+      const generation = await storage.getAudioGeneration(generationId);
+      
+      if (!generation) {
+        return res.status(404).json({ error: "Generation not found" });
+      }
+      
+      // Update the download count
+      await storage.updateAudioGenerationDownloadCount(generationId);
+      
+      return res.status(200).json({ 
+        success: true,
+        message: "Download count updated successfully" 
+      });
+      
+    } catch (error) {
+      console.error("Error updating download count:", error);
+      return res.status(500).json({ 
+        message: "Failed to update download count",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Delete audio generation
   app.delete("/api/generations/:id", requireAuth, async (req: Request, res: Response) => {
     try {
