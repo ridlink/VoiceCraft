@@ -79,6 +79,17 @@ export default function Header() {
                   </NavigationMenuItem>
                   
                   <NavigationMenuItem>
+                    <Link href="/create">
+                      <NavigationMenuLink 
+                        className={navigationMenuTriggerStyle()}
+                        active={location === "/create"}
+                      >
+                        Create
+                      </NavigationMenuLink>
+                    </Link>
+                  </NavigationMenuItem>
+                  
+                  <NavigationMenuItem>
                     <Link href="/voices">
                       <NavigationMenuLink 
                         className={navigationMenuTriggerStyle()}
@@ -122,10 +133,16 @@ export default function Header() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>My Account</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <Link href="/dashboard">
+                      <Link href="/">
                         <DropdownMenuItem>
                           <TbDashboard className="mr-2" />
                           Dashboard
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link href="/create">
+                        <DropdownMenuItem>
+                          <TbHome className="mr-2" />
+                          Create
                         </DropdownMenuItem>
                       </Link>
                       <Link href="/library">
@@ -174,6 +191,16 @@ export default function Header() {
                 >
                   <TbDashboard className="mr-2" />
                   Dashboard
+                </Button>
+              </Link>
+              
+              <Link href="/create" onClick={closeMobileMenu}>
+                <Button
+                  variant={location === "/create" ? "default" : "ghost"}
+                  className="justify-start w-full"
+                >
+                  <TbHome className="mr-2" />
+                  Create
                 </Button>
               </Link>
               
