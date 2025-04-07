@@ -8,6 +8,7 @@ import AudioPlayer from "@/components/AudioPlayer";
 import RecentGenerations from "@/components/RecentGenerations";
 import { apiRequest } from "@/lib/queryClient";
 import type { Voice, AudioGeneration } from "@shared/schema";
+import { TbMicrophone, TbDownload, TbWaveSquare } from "react-icons/tb";
 
 export default function Home() {
   const { toast } = useToast();
@@ -257,6 +258,51 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        {/* Stats Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-gradient-to-br from-primary-50 to-primary-100 border border-primary-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-primary-700 text-sm font-medium">Total Voices</h3>
+                <p className="text-2xl font-bold text-primary-900 mt-1">
+                  {voices?.length || 0}
+                </p>
+              </div>
+              <div className="bg-primary-100 p-3 rounded-full text-primary-600">
+                <TbMicrophone size={24} />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-blue-700 text-sm font-medium">Audio Generated</h3>
+                <p className="text-2xl font-bold text-blue-900 mt-1">
+                  {recentGenerations?.length || 0}
+                </p>
+              </div>
+              <div className="bg-blue-100 p-3 rounded-full text-blue-600">
+                <TbWaveSquare size={24} />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-emerald-700 text-sm font-medium">Downloads</h3>
+                <p className="text-2xl font-bold text-emerald-900 mt-1">
+                  {recentGenerations?.reduce((sum, gen) => sum + (gen.downloadCount || 0), 0) || 0}
+                </p>
+              </div>
+              <div className="bg-emerald-100 p-3 rounded-full text-emerald-600">
+                <TbDownload size={24} />
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Column: Text Input & Voice Selection */}

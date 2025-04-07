@@ -125,16 +125,22 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
             <audio ref={audioRef} className="hidden" />
             
             {/* Waveform Visualization */}
-            <div className="bg-gray-50 rounded-lg p-4 aspect-[3/1] flex items-center justify-center">
+            <div 
+              className={`rounded-lg p-4 aspect-[3/1] flex items-center justify-center transition-colors duration-500 ${
+                isPlaying 
+                  ? "bg-gradient-to-r from-primary-50 via-primary-100 to-primary-50" 
+                  : "bg-gray-50"
+              }`}
+            >
               <AudioWaveform 
                 isActive={isPlaying} 
                 barCount={48} 
-                variant="gradient" 
+                variant={isPlaying ? "gradient" : "solid"} 
                 animationSpeed={isPlaying ? "normal" : "slow"} 
               />
             </div>
             
-            {/* Audio Controls */}
+            {/* Audio Controls - Always Visible */}
             <div className="flex flex-col gap-3">
               <div className="flex justify-between text-xs text-gray-500">
                 <span>{formatTime(currentTime)}</span>
@@ -142,13 +148,35 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
               </div>
               
               <div 
-                className="relative w-full h-2 bg-gray-200 rounded-full cursor-pointer" 
+                className="relative w-full h-3 bg-gray-200 rounded-full cursor-pointer overflow-hidden" 
                 onClick={seek}
               >
                 <div 
-                  className="absolute top-0 left-0 h-full bg-primary-500 rounded-full" 
+                  className={`absolute top-0 left-0 h-full rounded-full transition-all duration-300 ${
+                    isPlaying 
+                      ? "bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600 shadow-sm shadow-primary-300/50" 
+                      : "bg-primary-500"
+                  }`}
                   style={{ width: `${(currentTime / Math.max(duration, 1)) * 100}%` }}
                 ></div>
+                {isPlaying && (
+                  <div 
+                    className="absolute top-0 left-0 w-full h-full opacity-20"
+                    style={{
+                      background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%)",
+                      backgroundSize: "200% 100%",
+                      animation: "shimmer 2s infinite",
+                    }}
+                  ></div>
+                )}
+                <style>
+                  {`
+                  @keyframes shimmer {
+                    0% { background-position: 200% 0; }
+                    100% { background-position: -200% 0; }
+                  }
+                  `}
+                </style>
               </div>
               
               <div className="flex items-center justify-between">

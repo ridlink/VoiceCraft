@@ -51,26 +51,26 @@ export default function Header() {
   };
 
   return (
-    <header className="border-b border-gray-200 bg-white">
-      <div className="container mx-auto px-4 py-3">
+    <header className="bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 shadow-md">
+      <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <span className="mr-2 text-primary">
-              <TbMicrophone size={28} />
+            <span className="mr-2 text-white bg-white/20 p-2 rounded-full">
+              <TbMicrophone size={24} />
             </span>
-            <span className="font-display text-xl font-bold">VoiceCraft</span>
+            <span className="font-display text-xl font-bold text-white">VoiceCraft</span>
           </Link>
 
           {/* Desktop Navigation */}
           {!isMobile ? (
             <nav className="hidden md:flex items-center space-x-1">
               <NavigationMenu>
-                <NavigationMenuList>
+                <NavigationMenuList className="bg-white/10 rounded-lg p-1">
                   <NavigationMenuItem>
                     <Link href="/">
                       <NavigationMenuLink 
-                        className={navigationMenuTriggerStyle()}
+                        className={`${navigationMenuTriggerStyle()} ${location === "/" ? "bg-white/20 text-white" : "text-white/90 hover:text-white hover:bg-white/15"}`}
                         active={location === "/"}
                       >
                         Dashboard
@@ -81,21 +81,10 @@ export default function Header() {
                   <NavigationMenuItem>
                     <Link href="/create">
                       <NavigationMenuLink 
-                        className={navigationMenuTriggerStyle()}
+                        className={`${navigationMenuTriggerStyle()} ${location === "/create" ? "bg-white/20 text-white" : "text-white/90 hover:text-white hover:bg-white/15"}`}
                         active={location === "/create"}
                       >
                         Create
-                      </NavigationMenuLink>
-                    </Link>
-                  </NavigationMenuItem>
-                  
-                  <NavigationMenuItem>
-                    <Link href="/voices">
-                      <NavigationMenuLink 
-                        className={navigationMenuTriggerStyle()}
-                        active={location === "/voices"}
-                      >
-                        Voices
                       </NavigationMenuLink>
                     </Link>
                   </NavigationMenuItem>
@@ -105,7 +94,7 @@ export default function Header() {
                       <NavigationMenuItem>
                         <Link href="/library">
                           <NavigationMenuLink 
-                            className={navigationMenuTriggerStyle()}
+                            className={`${navigationMenuTriggerStyle()} ${location === "/library" ? "bg-white/20 text-white" : "text-white/90 hover:text-white hover:bg-white/15"}`}
                             active={location === "/library"}
                           >
                             Library
@@ -121,40 +110,45 @@ export default function Header() {
                 {user ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                      <Button variant="ghost" className="relative h-10 w-10 rounded-full bg-white/20 hover:bg-white/30 text-white">
                         <Avatar>
                           <AvatarImage src={user.avatar || ""} alt={user.username} />
-                          <AvatarFallback>
+                          <AvatarFallback className="bg-primary-400 text-white">
                             {getInitials(user.fullName || user.username)}
                           </AvatarFallback>
                         </Avatar>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>
+                        <div className="flex flex-col space-y-1">
+                          <span className="font-medium text-sm">{user.fullName || user.username}</span>
+                          <span className="text-xs text-gray-500">{user.email}</span>
+                        </div>
+                      </DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <Link href="/">
                         <DropdownMenuItem>
-                          <TbDashboard className="mr-2" />
+                          <TbDashboard className="mr-2 text-primary-500" />
                           Dashboard
                         </DropdownMenuItem>
                       </Link>
                       <Link href="/create">
                         <DropdownMenuItem>
-                          <TbHome className="mr-2" />
+                          <TbHome className="mr-2 text-primary-500" />
                           Create
                         </DropdownMenuItem>
                       </Link>
                       <Link href="/library">
                         <DropdownMenuItem>
-                          <TbFiles className="mr-2" />
+                          <TbFiles className="mr-2 text-primary-500" />
                           My Library
                         </DropdownMenuItem>
                       </Link>
                       <DropdownMenuSeparator />
                       <SettingsDialog />
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleLogout}>
+                      <DropdownMenuItem onClick={handleLogout} className="text-red-500 focus:text-red-500 focus:bg-red-50">
                         <TbLogout className="mr-2" />
                         Logout
                       </DropdownMenuItem>
@@ -162,7 +156,7 @@ export default function Header() {
                   </DropdownMenu>
                 ) : (
                   <Link href="/auth">
-                    <Button>
+                    <Button className="bg-white text-primary-600 hover:bg-white/90">
                       <TbLogin className="mr-2" />
                       Login
                     </Button>
@@ -173,7 +167,12 @@ export default function Header() {
           ) : (
             /* Mobile Menu Button */
             <div className="md:hidden">
-              <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleMobileMenu} 
+                className="text-white hover:bg-white/20"
+              >
                 {mobileMenuOpen ? <TbX size={24} /> : <TbMenu2 size={24} />}
               </Button>
             </div>
@@ -182,12 +181,12 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMobile && mobileMenuOpen && (
-          <div className="md:hidden pt-4 pb-3 border-t border-gray-200 mt-3">
+          <div className="md:hidden pt-4 pb-3 border-t border-white/10 mt-3">
             <nav className="flex flex-col space-y-3">
               <Link href="/" onClick={closeMobileMenu}>
                 <Button
                   variant={location === "/" ? "default" : "ghost"}
-                  className="justify-start w-full"
+                  className={`justify-start w-full ${location !== "/" && "text-white/90 hover:text-white hover:bg-white/10"}`}
                 >
                   <TbDashboard className="mr-2" />
                   Dashboard
@@ -197,20 +196,10 @@ export default function Header() {
               <Link href="/create" onClick={closeMobileMenu}>
                 <Button
                   variant={location === "/create" ? "default" : "ghost"}
-                  className="justify-start w-full"
+                  className={`justify-start w-full ${location !== "/create" && "text-white/90 hover:text-white hover:bg-white/10"}`}
                 >
                   <TbHome className="mr-2" />
                   Create
-                </Button>
-              </Link>
-              
-              <Link href="/voices" onClick={closeMobileMenu}>
-                <Button
-                  variant={location === "/voices" ? "default" : "ghost"}
-                  className="justify-start w-full"
-                >
-                  <TbMicrophone className="mr-2" />
-                  Voices
                 </Button>
               </Link>
               
@@ -219,7 +208,7 @@ export default function Header() {
                   <Link href="/library" onClick={closeMobileMenu}>
                     <Button
                       variant={location === "/library" ? "default" : "ghost"}
-                      className="justify-start w-full"
+                      className={`justify-start w-full ${location !== "/library" && "text-white/90 hover:text-white hover:bg-white/10"}`}
                     >
                       <TbFiles className="mr-2" />
                       Library
@@ -230,12 +219,12 @@ export default function Header() {
               
               {user ? (
                 <>
-                  <div className="pt-2 mt-2 border-t border-gray-200">
+                  <div className="pt-2 mt-2 border-t border-white/10">
                     <SettingsDialog />
                   </div>
                   <Button
-                    variant="ghost"
-                    className="justify-start w-full mt-2"
+                    variant="outline"
+                    className="justify-start w-full mt-2 text-white border-white/20 hover:bg-white/10 hover:text-white"
                     onClick={() => {
                       handleLogout();
                       closeMobileMenu();
@@ -248,8 +237,8 @@ export default function Header() {
               ) : (
                 <Link href="/auth" onClick={closeMobileMenu}>
                   <Button
-                    variant="default"
-                    className="justify-start w-full"
+                    variant="outline"
+                    className="justify-start w-full text-white border-white/20 hover:bg-white/10"
                   >
                     <TbLogin className="mr-2" />
                     Login
