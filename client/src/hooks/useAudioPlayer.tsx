@@ -27,7 +27,7 @@ export default function useAudioPlayer(audioSrc: string | null) {
     };
   }, []);
   
-  // Update audio source when it changes
+  // Update audio source when it changes - with optimized loading
   useEffect(() => {
     // Clean up previous blob URL
     if (blobUrl) {
@@ -42,66 +42,87 @@ export default function useAudioPlayer(audioSrc: string | null) {
     
     setIsLoading(true);
     
-    // Reset state for new audio
-    setIsPlaying(false);
-    setCurrentTime(0);
-    setDuration(0);
+    // Use a worker-like approach to process the audio data asynchronously
+    const processAudioData = async () => {
+      try {
+        // Reset state for new audio
+        setIsPlaying(false);
+        setCurrentTime(0);
+        setDuration(0);
+        
+        // Check if we have a base64 encoded string (content might already be in that format)
+        if (audioSrc.startsWith('data:')) {
+          // Extract the base64 data
+          const parts = audioSrc.split(',');
+          if (parts.length !== 2) {
+            throw new Error("Invalid audio data format");
+          }
+          
+          const base64Data = parts[1];
+          
+          // Determine the MIME type from the data URL
+          const mimeMatch = parts[0].match(/data:(.*?);base64/);
+          const mimeType = mimeMatch ? mimeMatch[1] : 'audio/mpeg';
+          
+          // Convert base64 to binary using more efficient approach
+          const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+          
+          // Create a blob and object URL
+          const blob = new Blob([byteArray], { type: mimeType });
+          const url = URL.createObjectURL(blob);
+          
+          // Store the blob URL for later cleanup
+          setBlobUrl(url);
+          
+          // Set the audio source with preload attribute for faster loading
+          if (audioRef.current) {
+            audioRef.current.preload = "auto";
+            audioRef.current.src = url;
+            
+            // Use async/await to handle loading
+            await new Promise(resolve => {
+              if (audioRef.current) {
+                audioRef.current.onloadeddata = resolve;
+                audioRef.current.load();
+              } else {
+                resolve(null);
+              }
+            });
+          }
+          
+          console.log("Audio processed and ready to play");
+          setIsLoading(false); // Explicitly set loading to false when done
+        } else {
+          // If it's already a URL (like for downloaded voices), use it directly
+          if (audioRef.current) {
+            audioRef.current.preload = "auto";
+            audioRef.current.src = audioSrc;
+            audioRef.current.load();
+          }
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error("Error processing audio data:", error);
+        
+        // Fallback to direct data URL as a last resort
+        if (audioRef.current) {
+          audioRef.current.src = audioSrc;
+          audioRef.current.load();
+        }
+        
+        setIsLoading(false);
+        
+        toast({
+          variant: "destructive",
+          title: "Audio Processing Error",
+          description: "There was an issue processing the audio data."
+        });
+      }
+    };
     
-    try {
-      // Check if we have a valid data URL
-      if (!audioSrc.startsWith('data:')) {
-        throw new Error('Invalid audio source format');
-      }
-      
-      // Extract the base64 data from the data URL
-      const parts = audioSrc.split(',');
-      if (parts.length !== 2) {
-        throw new Error("Invalid audio data format");
-      }
-      
-      const base64Data = parts[1];
-      
-      // Determine the MIME type from the data URL
-      const mimeMatch = parts[0].match(/data:(.*?);base64/);
-      const mimeType = mimeMatch ? mimeMatch[1] : 'audio/mpeg';
-      
-      // Convert base64 to binary
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      
-      const byteArray = new Uint8Array(byteNumbers);
-      
-      // Create a blob and object URL
-      const blob = new Blob([byteArray], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      
-      // Store the blob URL for later cleanup
-      setBlobUrl(url);
-      
-      // Set the audio source
-      audioRef.current.src = url;
-      audioRef.current.load();
-      
-      console.log("Audio source updated with blob URL:", url);
-    } catch (error) {
-      console.error("Error processing audio data:", error);
-      
-      // Fallback to using the data URL directly
-      if (audioRef.current) {
-        audioRef.current.src = audioSrc;
-        audioRef.current.load();
-      }
-      
-      toast({
-        variant: "destructive",
-        title: "Audio Processing Error",
-        description: "There was an issue processing the audio data."
-      });
-    }
+    // Execute the async function
+    processAudioData();
+    
   }, [audioSrc, toast]);
   
   // Set up audio event listeners

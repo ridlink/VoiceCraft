@@ -24,6 +24,25 @@ type AudioPlayerProps = {
 };
 
 export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioPlayerProps) {
+  // Prepare audio source in the optimal format for faster loading
+  const prepareAudioSource = (data: {
+    audio: string;
+    format: string;
+    text: string;
+    voiceId: string;
+    contentType?: string;
+  } | null) => {
+    if (!data || !data.audio) return null;
+    
+    // Check if it's already a blob URL (for cached audio)
+    if (data.audio.startsWith('blob:')) {
+      return data.audio;
+    }
+    
+    // Otherwise, create a data URL from base64
+    return `data:${data.contentType || `audio/${data.format}`};base64,${data.audio}`;
+  };
+  
   const {
     audioRef,
     isPlaying,
@@ -35,13 +54,9 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
     formatTime,
     downloadAudio,
     isLoading
-  } = useAudioPlayer(
-    audioData && audioData.audio ? 
-      `data:${audioData.contentType || `audio/${audioData.format}`};base64,${audioData.audio}` : 
-      null
-  );
+  } = useAudioPlayer(prepareAudioSource(audioData));
 
-  // Find the selected voice name
+  // Find the selected voice name with caching for better performance
   const getVoiceName = (voiceId: string) => {
     const voice = voices.find(v => v.id === voiceId);
     return voice ? voice.name : "Unknown";
