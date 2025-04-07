@@ -43,7 +43,7 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-primary-600 shadow-md">
+    <header className="bg-black shadow-md">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
