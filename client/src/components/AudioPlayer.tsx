@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -83,15 +84,19 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
         )}
         
         {isLoading && (
-          <div className="border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center py-10 px-4">
-            <div className="mb-4">
-              <AudioWaveform isActive={true} />
+          <div className="border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center py-6 px-4">
+            <h3 className="font-medium text-gray-700 mb-1">Preparing Audio</h3>
+            <div className="w-full max-w-md my-2">
+              <Progress value={75} className="h-2 mb-3 animate-pulse" />
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Loading audio data</span>
+                <span>75%</span>
+              </div>
             </div>
-            <h3 className="font-medium text-gray-700 mb-1">Processing audio...</h3>
-            <div className="w-full max-w-xs bg-gray-200 rounded-full h-2.5 my-2">
-              <div className="bg-primary-600 h-2.5 rounded-full animate-pulse" style={{ width: "60%" }}></div>
+            <div className="my-3">
+              <AudioWaveform isActive={true} barCount={16} variant="gradient" animationSpeed="fast" />
             </div>
-            <p className="text-sm text-gray-500">Preparing your audio for playback</p>
+            <p className="text-sm text-gray-500">Optimizing audio for playback</p>
           </div>
         )}
         
@@ -121,7 +126,12 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
             
             {/* Waveform Visualization */}
             <div className="bg-gray-50 rounded-lg p-4 aspect-[3/1] flex items-center justify-center">
-              <AudioWaveform isActive={isPlaying} />
+              <AudioWaveform 
+                isActive={isPlaying} 
+                barCount={48} 
+                variant="gradient" 
+                animationSpeed={isPlaying ? "normal" : "slow"} 
+              />
             </div>
             
             {/* Audio Controls */}

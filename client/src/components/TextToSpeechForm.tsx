@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { ttsRequestSchema } from "@shared/schema";
 import type { Voice } from "@shared/schema";
+import GenerationLoader from "./GenerationLoader";
 
 const formSchema = ttsRequestSchema.extend({
   text: z.string().min(1, "Text is required").max(5000, "Text cannot exceed 5000 characters"),
@@ -113,6 +114,15 @@ export default function TextToSpeechForm({
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <h2 className="font-display font-semibold text-lg text-gray-800 mb-4">Text to Voice</h2>
+      
+      {generateSpeech.isPending && (
+        <div className="mb-6">
+          <GenerationLoader 
+            isPending={generateSpeech.isPending} 
+            length={charCount}
+          />
+        </div>
+      )}
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
