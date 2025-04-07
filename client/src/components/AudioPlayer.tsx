@@ -9,38 +9,39 @@ import {
 } from "@/components/ui/dropdown-menu";
 import AudioWaveform from "./AudioWaveform";
 import useAudioPlayer from "@/hooks/useAudioPlayer";
-import type { Voice } from "@shared/schema";
+import type { Voice, AudioGeneration } from "@shared/schema";
 
 type AudioPlayerProps = {
-  audioData: {
-    audio: string;
-    format: string;
-    text: string;
-    voiceId: string;
-    contentType?: string;
-  } | null;
+  audioData: AudioGeneration | null;
   selectedVoice: string;
   voices: Voice[];
 };
 
 export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioPlayerProps) {
   // Prepare audio source in the optimal format for faster loading
-  const prepareAudioSource = (data: {
-    audio: string;
-    format: string;
-    text: string;
-    voiceId: string;
-    contentType?: string;
-  } | null) => {
-    if (!data || !data.audio) return null;
+  const prepareAudioSource = (data: AudioGeneration | null) => {
+    if (!data) return null;
     
-    // Check if it's already a blob URL (for cached audio)
-    if (data.audio.startsWith('blob:')) {
-      return data.audio;
+    // If we have a direct URL to the audio, use it
+    if (data.audioUrl) {
+      return data.audioUrl;
     }
     
-    // Otherwise, create a data URL from base64
-    return `data:${data.contentType || `audio/${data.format}`};base64,${data.audio}`;
+    // For backward compatibility - if we have audio in the request/response
+    if ('audio' in data && typeof data.audio === 'string') {
+      // Check if it's already a blob URL (for cached audio)
+      if (data.audio.startsWith('blob:')) {
+        return data.audio;
+      }
+      
+      // Otherwise, create a data URL from base64
+      const format = data.format || 'mp3';
+      const contentType = (data as any).contentType || `audio/${format}`;
+      return `data:${contentType};base64,${data.audio}`;
+    }
+    
+    // Last resort - create URL for audio fetching
+    return `/api/generations/${data.id}/audio`;
   };
   
   const {
