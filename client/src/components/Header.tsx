@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { TbMenu2, TbX, TbHome, TbMicrophone, TbFiles, TbDashboard, TbLogin, TbLogout, TbUserCircle } from "react-icons/tb";
+import { TbMenu2, TbX, TbHome, TbMicrophone, TbFiles, TbDashboard, TbLogin, TbLogout, TbUserCircle, TbSettings } from "react-icons/tb";
+import SettingsDialog from "@/components/SettingsDialog";
 
 export default function Header() {
   const [location] = useLocation();
@@ -72,7 +73,7 @@ export default function Header() {
                         className={navigationMenuTriggerStyle()}
                         active={location === "/"}
                       >
-                        Home
+                        Dashboard
                       </NavigationMenuLink>
                     </Link>
                   </NavigationMenuItem>
@@ -97,17 +98,6 @@ export default function Header() {
                             active={location === "/library"}
                           >
                             Library
-                          </NavigationMenuLink>
-                        </Link>
-                      </NavigationMenuItem>
-                      
-                      <NavigationMenuItem>
-                        <Link href="/dashboard">
-                          <NavigationMenuLink 
-                            className={navigationMenuTriggerStyle()}
-                            active={location === "/dashboard"}
-                          >
-                            Dashboard
                           </NavigationMenuLink>
                         </Link>
                       </NavigationMenuItem>
@@ -145,6 +135,8 @@ export default function Header() {
                         </DropdownMenuItem>
                       </Link>
                       <DropdownMenuSeparator />
+                      <SettingsDialog />
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleLogout}>
                         <TbLogout className="mr-2" />
                         Logout
@@ -180,8 +172,8 @@ export default function Header() {
                   variant={location === "/" ? "default" : "ghost"}
                   className="justify-start w-full"
                 >
-                  <TbHome className="mr-2" />
-                  Home
+                  <TbDashboard className="mr-2" />
+                  Dashboard
                 </Button>
               </Link>
               
@@ -206,31 +198,26 @@ export default function Header() {
                       Library
                     </Button>
                   </Link>
-                  
-                  <Link href="/dashboard" onClick={closeMobileMenu}>
-                    <Button
-                      variant={location === "/dashboard" ? "default" : "ghost"}
-                      className="justify-start w-full"
-                    >
-                      <TbDashboard className="mr-2" />
-                      Dashboard
-                    </Button>
-                  </Link>
                 </>
               )}
               
               {user ? (
-                <Button
-                  variant="ghost"
-                  className="justify-start w-full border-t border-gray-200 mt-2 pt-2"
-                  onClick={() => {
-                    handleLogout();
-                    closeMobileMenu();
-                  }}
-                >
-                  <TbLogout className="mr-2" />
-                  Logout
-                </Button>
+                <>
+                  <div className="pt-2 mt-2 border-t border-gray-200">
+                    <SettingsDialog />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    className="justify-start w-full mt-2"
+                    onClick={() => {
+                      handleLogout();
+                      closeMobileMenu();
+                    }}
+                  >
+                    <TbLogout className="mr-2" />
+                    Logout
+                  </Button>
+                </>
               ) : (
                 <Link href="/auth" onClick={closeMobileMenu}>
                   <Button

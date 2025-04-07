@@ -15,10 +15,10 @@ import Header from "@/components/Header";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
+      <ProtectedRoute path="/" component={Dashboard} />
+      <Route path="/home" component={Home} />
       <Route path="/voices" component={Voices} />
       <Route path="/auth" component={AuthPage} />
-      <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/library" component={Library} />
       <Route component={NotFound} />
     </Switch>

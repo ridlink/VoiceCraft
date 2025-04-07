@@ -9,10 +9,14 @@ export default function useAudioPlayer(audioSrc: string | null) {
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [audioLoaded, setAudioLoaded] = useState(false);
   
   // Create Audio object on component mount
   useEffect(() => {
-    audioRef.current = new Audio();
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.preload = "auto";
+    }
     
     return () => {
       if (audioRef.current) {

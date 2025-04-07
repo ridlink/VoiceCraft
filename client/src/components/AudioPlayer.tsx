@@ -7,6 +7,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { TbPlayerPlay, TbPlayerPause, TbRefresh, TbVolume, TbDownload } from "react-icons/tb";
 import AudioWaveform from "./AudioWaveform";
 import useAudioPlayer from "@/hooks/useAudioPlayer";
 import type { Voice, AudioGeneration } from "@shared/schema";
@@ -123,7 +126,7 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
                     onClick={togglePlay}
                     className="w-10 h-10 rounded-full p-0"
                   >
-                    <i className={`${isPlaying ? "ri-pause-line" : "ri-play-line"}`}></i>
+                    {isPlaying ? <TbPlayerPause size={20} /> : <TbPlayerPlay size={20} />}
                   </Button>
                   
                   <Button
@@ -131,7 +134,7 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
                     variant="outline"
                     className="w-8 h-8 rounded-full p-0"
                   >
-                    <i className="ri-restart-line"></i>
+                    <TbRefresh size={16} />
                   </Button>
                 </div>
                 
@@ -140,7 +143,7 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
                     variant="ghost"
                     className="w-8 h-8 rounded-full p-0"
                   >
-                    <i className="ri-volume-up-line"></i>
+                    <TbVolume size={16} />
                   </Button>
                   
                   <DropdownMenu>
@@ -149,16 +152,16 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
                         variant="ghost"
                         className="w-8 h-8 rounded-full p-0"
                       >
-                        <i className="ri-download-2-line"></i>
+                        <TbDownload size={16} />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => downloadAudio("mp3")}>
-                        <i className="ri-file-music-line mr-2"></i>
+                        <TbDownload className="mr-2" size={16} />
                         Download MP3
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => downloadAudio("wav")}>
-                        <i className="ri-file-music-line mr-2"></i>
+                        <TbDownload className="mr-2" size={16} />
                         Download WAV
                       </DropdownMenuItem>
                     </DropdownMenuContent>

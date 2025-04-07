@@ -1,12 +1,24 @@
 import { z } from "zod";
 import { TtsRequest } from "@shared/schema";
 
+// Get the API key from localStorage
+function getApiKey(): string | null {
+  return localStorage.getItem("elevenLabsApiKey");
+}
+
 export async function generateSpeech(data: TtsRequest): Promise<any> {
+  const apiKey = getApiKey();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  
+  if (apiKey) {
+    headers["x-api-key"] = apiKey;
+  }
+  
   const response = await fetch("/api/text-to-speech", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify(data),
   });
 
@@ -20,7 +32,14 @@ export async function generateSpeech(data: TtsRequest): Promise<any> {
 }
 
 export async function getVoices() {
-  const response = await fetch("/api/voices");
+  const apiKey = getApiKey();
+  const headers: Record<string, string> = {};
+  
+  if (apiKey) {
+    headers["x-api-key"] = apiKey;
+  }
+  
+  const response = await fetch("/api/voices", { headers });
   
   if (!response.ok) {
     const errorBody = await response.text();
@@ -31,7 +50,14 @@ export async function getVoices() {
 }
 
 export async function getApiStatus() {
-  const response = await fetch("/api/status");
+  const apiKey = getApiKey();
+  const headers: Record<string, string> = {};
+  
+  if (apiKey) {
+    headers["x-api-key"] = apiKey;
+  }
+  
+  const response = await fetch("/api/status", { headers });
   
   if (!response.ok) {
     const errorBody = await response.text();
@@ -42,7 +68,14 @@ export async function getApiStatus() {
 }
 
 export async function getRecentGenerations() {
-  const response = await fetch("/api/generations");
+  const apiKey = getApiKey();
+  const headers: Record<string, string> = {};
+  
+  if (apiKey) {
+    headers["x-api-key"] = apiKey;
+  }
+  
+  const response = await fetch("/api/generations", { headers });
   
   if (!response.ok) {
     const errorBody = await response.text();

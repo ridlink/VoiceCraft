@@ -8,18 +8,24 @@ import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { setupAuth, requireAuth } from "./auth";
 
-const ELEVEN_LABS_API_KEY = process.env.ELEVEN_LABS_API_KEY || "sk_20b1a5899d669aed061c48e8242efd55f43abf2445bfd0f3";
+const DEFAULT_ELEVEN_LABS_API_KEY = process.env.ELEVEN_LABS_API_KEY || "sk_20b1a5899d669aed061c48e8242efd55f43abf2445bfd0f3";
 const ELEVEN_LABS_API_URL = "https://api.elevenlabs.io/v1";
+
+// Get the API key from request headers or use the default
+function getApiKey(req: Request): string {
+  return req.headers['x-api-key'] as string || DEFAULT_ELEVEN_LABS_API_KEY;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes and middleware
   setupAuth(app);
   // Fetch available voices from Eleven Labs
-  app.get("/api/voices", async (_req: Request, res: Response) => {
+  app.get("/api/voices", async (req: Request, res: Response) => {
     try {
+      const apiKey = getApiKey(req);
       const response = await axios.get(`${ELEVEN_LABS_API_URL}/voices`, {
         headers: {
-          "xi-api-key": ELEVEN_LABS_API_KEY,
+          "xi-api-key": apiKey,
         },
       });
 
@@ -58,6 +64,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/text-to-speech", requireAuth, async (req: Request, res: Response) => {
     try {
       const validatedData = ttsRequestSchema.parse(req.body);
+      const apiKey = getApiKey(req);
       
       // Convert stability and clarity to ElevenLabs parameters
       const stability = validatedData.stability / 100;
@@ -75,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         {
           headers: {
-            "xi-api-key": ELEVEN_LABS_API_KEY,
+            "xi-api-key": apiKey,
             "Content-Type": "application/json",
             Accept: "audio/mpeg",
           },
@@ -240,12 +247,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // API Status check
-  app.get("/api/status", async (_req: Request, res: Response) => {
+  app.get("/api/status", async (req: Request, res: Response) => {
     try {
       // Check if we can access the Eleven Labs API
+      const apiKey = getApiKey(req);
       await axios.get(`${ELEVEN_LABS_API_URL}/voices`, {
         headers: {
-          "xi-api-key": ELEVEN_LABS_API_KEY,
+          "xi-api-key": apiKey,
         },
       });
       
