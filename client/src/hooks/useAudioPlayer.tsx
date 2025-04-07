@@ -50,9 +50,9 @@ export default function useAudioPlayer(audioSrc: string | null) {
         setCurrentTime(0);
         setDuration(0);
         
-        // Check if we have a base64 encoded string (content might already be in that format)
+        // Handle different types of audio sources
         if (audioSrc.startsWith('data:')) {
-          // Extract the base64 data
+          // Case 1: Data URL (base64 encoded)
           const parts = audioSrc.split(',');
           if (parts.length !== 2) {
             throw new Error("Invalid audio data format");
@@ -74,56 +74,81 @@ export default function useAudioPlayer(audioSrc: string | null) {
           // Store the blob URL for later cleanup
           setBlobUrl(url);
           
-          // Set the audio source with preload attribute for faster loading
+          // Set the audio source
           if (audioRef.current) {
             audioRef.current.preload = "auto";
             audioRef.current.src = url;
-            
-            // Use async/await to handle loading
-            await new Promise(resolve => {
-              if (audioRef.current) {
-                audioRef.current.onloadeddata = resolve;
-                audioRef.current.load();
-              } else {
-                resolve(null);
-              }
-            });
+            audioRef.current.load();
           }
-          
-          console.log("Audio processed and ready to play");
-          setIsLoading(false); // Explicitly set loading to false when done
-        } else {
-          // If it's already a URL (like for downloaded voices), use it directly
+        } else if (audioSrc.startsWith('blob:')) {
+          // Case 2: Already a blob URL
           if (audioRef.current) {
             audioRef.current.preload = "auto";
             audioRef.current.src = audioSrc;
             audioRef.current.load();
           }
-          setIsLoading(false);
+        } else if (audioSrc.startsWith('/api/')) {
+          // Case 3: API endpoint - fetch the audio file first
+          try {
+            const response = await fetch(audioSrc);
+            if (!response.ok) {
+              throw new Error(`Failed to fetch audio: ${response.status}`);
+            }
+            
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            
+            // Store the blob URL for later cleanup
+            setBlobUrl(url);
+            
+            // Set the audio source
+            if (audioRef.current) {
+              audioRef.current.preload = "auto";
+              audioRef.current.src = url;
+              audioRef.current.load();
+            }
+          } catch (fetchError) {
+            console.error("Error fetching audio:", fetchError);
+            throw fetchError;
+          }
+        } else {
+          // Case 4: Direct URL (e.g., from CDN or external source)
+          if (audioRef.current) {
+            audioRef.current.preload = "auto";
+            audioRef.current.crossOrigin = "anonymous"; // Add CORS support for external URLs
+            audioRef.current.src = audioSrc;
+            audioRef.current.load();
+          }
         }
+        
+        console.log("Audio source set successfully");
       } catch (error) {
         console.error("Error processing audio data:", error);
         
-        // Fallback to direct data URL as a last resort
+        // Fallback attempt - direct assignment as last resort
         if (audioRef.current) {
-          audioRef.current.src = audioSrc;
-          audioRef.current.load();
+          try {
+            audioRef.current.src = audioSrc;
+            audioRef.current.load();
+          } catch (fallbackError) {
+            console.error("Even fallback loading failed:", fallbackError);
+          }
         }
-        
-        setIsLoading(false);
         
         toast({
           variant: "destructive",
           title: "Audio Processing Error",
-          description: "There was an issue processing the audio data."
+          description: "There was an issue processing the audio data. Please try again."
         });
+      } finally {
+        setIsLoading(false);
       }
     };
     
     // Execute the async function
     processAudioData();
     
-  }, [audioSrc, toast]);
+  }, [audioSrc, toast, blobUrl]);
   
   // Set up audio event listeners
   useEffect(() => {

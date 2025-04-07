@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { AudioGeneration, Voice } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import { Link } from "wouter";
 import AudioPlayer from "@/components/AudioPlayer";
 import {
   Card,
@@ -40,7 +41,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { TbPlayerPlay, TbPlayerStop, TbDownload, TbTrash, TbDotsVertical } from "react-icons/tb";
+import { TbPlayerPlay, TbPlayerStop, TbDownload, TbTrash, TbDotsVertical, TbPlus } from "react-icons/tb";
 
 export default function Library() {
   const { toast } = useToast();
@@ -114,7 +115,7 @@ export default function Library() {
   });
   
   const downloadGeneration = (generation: AudioGeneration) => {
-    if (!generation.audioUrl) {
+    if (!generation.audioUrl && !generation.id) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -124,18 +125,19 @@ export default function Library() {
     }
     
     try {
-      // If we have a direct URL to the audio file, use it
-      if (generation.audioUrl.startsWith('http')) {
-        const a = document.createElement("a");
-        a.href = generation.audioUrl;
-        a.download = `voicecraft-${generation.id}.${generation.format || 'mp3'}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } else {
-        // Fetch from server if needed
-        fetch(`/api/generations/${generation.id}/download`)
-          .then(response => response.blob())
+      // Update the download count in the database
+      fetch(`/api/generations/${generation.id}/increment-download`, {
+        method: 'POST'
+      }).catch(err => console.warn("Failed to update download count", err));
+      
+      // Handle different audio source scenarios
+      if (generation.audioUrl && generation.audioUrl.startsWith('http')) {
+        // Direct HTTP URL case
+        fetch(generation.audioUrl)
+          .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            return response.blob();
+          })
           .then(blob => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
@@ -144,9 +146,31 @@ export default function Library() {
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 100);
           })
           .catch(error => {
+            console.error("Download fetch error:", error);
+            throw error;
+          });
+      } else {
+        // Fetch from server API endpoint
+        fetch(`/api/generations/${generation.id}/audio`)
+          .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            return response.blob();
+          })
+          .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `voicecraft-${generation.id}.${generation.format || 'mp3'}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+          })
+          .catch(error => {
+            console.error("Download fetch error:", error);
             throw error;
           });
       }
@@ -160,7 +184,7 @@ export default function Library() {
       toast({
         variant: "destructive",
         title: "Download Failed",
-        description: "There was an error downloading the audio.",
+        description: "There was an error downloading the audio. Please try again.",
       });
     }
   };
@@ -203,30 +227,40 @@ export default function Library() {
                   <CardDescription>Browse and manage your generated audio files</CardDescription>
                 </div>
                 
-                {selectedRows.length > 0 && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm">
-                        <TbTrash className="mr-2" />
-                        Delete Selected
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete {selectedRows.length} selected audio files.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteMultipleGenerationsMutation.mutate(selectedRows)}>
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    onClick={() => window.location.href = '/'}
+                  >
+                    <TbPlus className="mr-1" /> Create New Audio
+                  </Button>
+                  
+                  {selectedRows.length > 0 && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          <TbTrash className="mr-2" />
+                          Delete Selected
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete {selectedRows.length} selected audio files.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteMultipleGenerationsMutation.mutate(selectedRows)}>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
               </div>
               
               <div className="mt-4">
