@@ -3,6 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Voice, AudioGeneration, UserStats } from "@shared/schema";
 import {
+  TbMicrophone, 
+  TbFileText, 
+  TbHourglassHigh, 
+  TbUsers, 
+  TbDownload, 
+  TbArrowRight
+} from "react-icons/tb";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -31,12 +39,12 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { TbArrowRight, TbMicrophone, TbFileText, TbHourglassHigh, TbUsers } from "react-icons/tb";
 
 interface UserStatsData {
   totalGenerations: number;
   totalCharacters: number;
   totalDuration: number;
+  totalDownloads: number;
   recentActivity: {
     date: string;
     generations: number;
@@ -105,6 +113,7 @@ export default function Dashboard() {
         totalGenerations: userStats.totalGenerations || 0,
         totalCharacters: userStats.totalCharacters || 0,
         totalDuration: userStats.totalDuration || 0,
+        totalDownloads: userStats.totalDownloads || 0,
         recentActivity,
         popularVoices,
         monthlyQuota: userStats.monthlyQuota || 100,
@@ -147,6 +156,25 @@ export default function Dashboard() {
           <CardFooter className="pb-6 pt-1">
             <p className="text-xs text-muted-foreground">
               Audio files you've created
+            </p>
+          </CardFooter>
+        </Card>
+        
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Downloads</p>
+                <h3 className="text-2xl font-bold">{statsData?.totalDownloads || 0}</h3>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
+                <TbDownload size={24} className="text-blue-500" />
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="pb-6 pt-1">
+            <p className="text-xs text-muted-foreground">
+              Audio files you've downloaded
             </p>
           </CardFooter>
         </Card>

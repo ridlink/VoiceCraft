@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import TextToSpeechForm from "@/components/TextToSpeechForm";
 import VoiceSelector from "@/components/VoiceSelector";
@@ -244,9 +243,7 @@ export default function Home() {
   };
   
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      
+    <div className="flex flex-col">
       <main className="flex-grow container mx-auto px-4 py-8">
         {/* API Status Alert */}
         {apiStatus && (

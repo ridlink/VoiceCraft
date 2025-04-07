@@ -94,24 +94,57 @@ export default function Voices() {
   const playVoiceSample = (voice: Voice) => {
     setSelectedVoice(voice);
     
-    // If the voice has a preview URL, play it
-    if (voice.previewUrl) {
-      const audio = new Audio(voice.previewUrl);
+    // Generate a sample using text-to-speech since we don't have preview URLs yet
+    toast({
+      title: "Generating Sample",
+      description: "Creating a voice sample for " + voice.name + "...",
+    });
+    
+    fetch("/api/text-to-speech", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        text: "This is a sample of my voice. I hope you like how I sound.",
+        voiceId: voice.id,
+        stability: 50,
+        clarity: 70
+      })
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Failed to generate sample");
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (!data.audio) {
+        throw new Error("No audio data received");
+      }
+      
+      // Create and play audio from base64
+      const audioSrc = `data:audio/mp3;base64,${data.audio}`;
+      const audio = new Audio(audioSrc);
+      
       audio.play().catch(error => {
         console.error("Error playing audio:", error);
-        toast({
-          variant: "destructive",
-          title: "Playback Error",
-          description: "Could not play the voice sample.",
-        });
+        throw new Error("Could not play the voice sample");
       });
-    } else {
+      
+      toast({
+        title: "Playing Sample",
+        description: "Now playing a sample of " + voice.name,
+      });
+    })
+    .catch(error => {
+      console.error("Error:", error);
       toast({
         variant: "destructive",
-        title: "No Sample Available",
-        description: "This voice doesn't have a preview sample.",
+        title: "Playback Error",
+        description: error.message || "Could not play the voice sample.",
       });
-    }
+    });
   };
   
   const handleFilterChange = (key: keyof VoiceFilter, value: string) => {
@@ -306,22 +339,12 @@ export default function Voices() {
               
               <div>
                 <h3 className="font-medium mb-2">Voice Sample</h3>
-                {selectedVoice.previewUrl ? (
-                  <div className="bg-gray-50 rounded-lg p-6 flex flex-col items-center">
-                    <Button onClick={() => playVoiceSample(selectedVoice)}>
-                      <TbMicrophone className="mr-2" />
-                      Play Sample
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="bg-gray-50 rounded-lg p-6 text-center">
-                    <p className="text-muted-foreground">No sample available</p>
-                    <Button className="mt-4" variant="outline">
-                      <TbArrowRight className="mr-2" />
-                      Create with This Voice
-                    </Button>
-                  </div>
-                )}
+                <div className="bg-gray-50 rounded-lg p-6 flex flex-col items-center">
+                  <Button onClick={() => playVoiceSample(selectedVoice)}>
+                    <TbMicrophone className="mr-2" />
+                    Generate Sample
+                  </Button>
+                </div>
                 
                 <div className="mt-4">
                   <h3 className="font-medium mb-2">Voice Characteristics</h3>
