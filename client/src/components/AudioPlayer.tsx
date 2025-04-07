@@ -76,10 +76,21 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
         {!audioData && !isLoading && (
           <div className="border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center py-10 px-4 text-center">
             <div className="bg-primary-50 h-16 w-16 rounded-full flex items-center justify-center text-primary-500 mb-3">
-              <i className="ri-sound-module-line text-2xl"></i>
+              <TbVolume size={28} />
             </div>
             <h3 className="font-medium text-gray-700 mb-1">No audio generated yet</h3>
             <p className="text-sm text-gray-500 max-w-xs">Enter your text and click the Generate button to create audio</p>
+            
+            <div className="w-full max-w-md mt-5">
+              <div className="bg-slate-50 rounded-lg py-2 px-3">
+                <AudioWaveform 
+                  isActive={false} 
+                  barCount={32} 
+                  variant="solid" 
+                  height={24}
+                />
+              </div>
+            </div>
           </div>
         )}
         
@@ -93,8 +104,8 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
                 <span>75%</span>
               </div>
             </div>
-            <div className="my-3">
-              <AudioWaveform isActive={true} barCount={16} variant="gradient" animationSpeed="fast" />
+            <div className="bg-slate-50 p-3 rounded-lg my-3 w-full flex justify-center">
+              <AudioWaveform isActive={true} barCount={24} variant="rainbow" animationSpeed="fast" height={40} />
             </div>
             <p className="text-sm text-gray-500">Optimizing audio for playback</p>
           </div>
@@ -128,15 +139,16 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
             <div 
               className={`rounded-lg p-4 aspect-[3/1] flex items-center justify-center transition-colors duration-500 ${
                 isPlaying 
-                  ? "bg-gradient-to-r from-primary-50 via-primary-100 to-primary-50" 
+                  ? "bg-gradient-to-br from-slate-50 via-slate-100 to-gray-100" 
                   : "bg-gray-50"
               }`}
             >
               <AudioWaveform 
                 isActive={isPlaying} 
-                barCount={48} 
-                variant={isPlaying ? "gradient" : "solid"} 
-                animationSpeed={isPlaying ? "normal" : "slow"} 
+                barCount={52} 
+                variant={isPlaying ? "rainbow" : "solid"} 
+                animationSpeed={isPlaying ? "normal" : "slow"}
+                height={50}
               />
             </div>
             
