@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { TbPlayerPlay, TbPlayerPause, TbRefresh, TbVolume, TbDownload } from "react-icons/tb";
+import { TbPlayerPlay, TbPlayerPause, TbRefresh, TbVolume, TbDownload, TbAlertTriangle } from "react-icons/tb";
 import AudioWaveform from "./AudioWaveform";
 import useAudioPlayer from "@/hooks/useAudioPlayer";
 import type { Voice, AudioGeneration } from "@shared/schema";
@@ -57,7 +57,8 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
     seek,
     formatTime,
     downloadAudio,
-    isLoading
+    isLoading,
+    error
   } = useAudioPlayer(prepareAudioSource(audioData));
 
   // Find the selected voice name with caching for better performance
@@ -94,7 +95,27 @@ export default function AudioPlayer({ audioData, selectedVoice, voices }: AudioP
           </div>
         )}
         
-        {audioData && !isLoading && (
+        {error && !isLoading && audioData && (
+          <Alert variant="destructive" className="mb-4">
+            <div className="flex items-center gap-2">
+              <TbAlertTriangle className="h-5 w-5" />
+              <AlertTitle>Playback Error</AlertTitle>
+            </div>
+            <AlertDescription className="mt-2">
+              Could not play the audio. Please try again.
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2 w-full"
+                onClick={() => togglePlay()}
+              >
+                Retry Playback
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {audioData && !isLoading && !error && (
           <div className="space-y-5">
             <audio ref={audioRef} className="hidden" />
             

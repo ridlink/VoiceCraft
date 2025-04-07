@@ -8,160 +8,15 @@ export default function useAudioPlayer(audioSrc: string | null) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [audioLoaded, setAudioLoaded] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   
   // Create Audio object on component mount
   useEffect(() => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-      audioRef.current.preload = "auto";
-    }
+    const audio = new Audio();
+    audioRef.current = audio;
     
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = "";
-      }
-      
-      // Clean up any blob URLs
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
-      }
-    };
-  }, []);
-  
-  // Update audio source when it changes - with optimized loading
-  useEffect(() => {
-    // Clean up previous blob URL
-    if (blobUrl) {
-      URL.revokeObjectURL(blobUrl);
-      setBlobUrl(null);
-    }
-    
-    if (!audioSrc || !audioRef.current) {
-      setIsLoading(false);
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    // Use a worker-like approach to process the audio data asynchronously
-    const processAudioData = async () => {
-      try {
-        // Reset state for new audio
-        setIsPlaying(false);
-        setCurrentTime(0);
-        setDuration(0);
-        
-        // Handle different types of audio sources
-        if (audioSrc.startsWith('data:')) {
-          // Case 1: Data URL (base64 encoded)
-          const parts = audioSrc.split(',');
-          if (parts.length !== 2) {
-            throw new Error("Invalid audio data format");
-          }
-          
-          const base64Data = parts[1];
-          
-          // Determine the MIME type from the data URL
-          const mimeMatch = parts[0].match(/data:(.*?);base64/);
-          const mimeType = mimeMatch ? mimeMatch[1] : 'audio/mpeg';
-          
-          // Convert base64 to binary using more efficient approach
-          const byteArray = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-          
-          // Create a blob and object URL
-          const blob = new Blob([byteArray], { type: mimeType });
-          const url = URL.createObjectURL(blob);
-          
-          // Store the blob URL for later cleanup
-          setBlobUrl(url);
-          
-          // Set the audio source
-          if (audioRef.current) {
-            audioRef.current.preload = "auto";
-            audioRef.current.src = url;
-            audioRef.current.load();
-          }
-        } else if (audioSrc.startsWith('blob:')) {
-          // Case 2: Already a blob URL
-          if (audioRef.current) {
-            audioRef.current.preload = "auto";
-            audioRef.current.src = audioSrc;
-            audioRef.current.load();
-          }
-        } else if (audioSrc.startsWith('/api/')) {
-          // Case 3: API endpoint - fetch the audio file first
-          try {
-            const response = await fetch(audioSrc);
-            if (!response.ok) {
-              throw new Error(`Failed to fetch audio: ${response.status}`);
-            }
-            
-            const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            
-            // Store the blob URL for later cleanup
-            setBlobUrl(url);
-            
-            // Set the audio source
-            if (audioRef.current) {
-              audioRef.current.preload = "auto";
-              audioRef.current.src = url;
-              audioRef.current.load();
-            }
-          } catch (fetchError) {
-            console.error("Error fetching audio:", fetchError);
-            throw fetchError;
-          }
-        } else {
-          // Case 4: Direct URL (e.g., from CDN or external source)
-          if (audioRef.current) {
-            audioRef.current.preload = "auto";
-            audioRef.current.crossOrigin = "anonymous"; // Add CORS support for external URLs
-            audioRef.current.src = audioSrc;
-            audioRef.current.load();
-          }
-        }
-        
-        console.log("Audio source set successfully");
-      } catch (error) {
-        console.error("Error processing audio data:", error);
-        
-        // Fallback attempt - direct assignment as last resort
-        if (audioRef.current) {
-          try {
-            audioRef.current.src = audioSrc;
-            audioRef.current.load();
-          } catch (fallbackError) {
-            console.error("Even fallback loading failed:", fallbackError);
-          }
-        }
-        
-        toast({
-          variant: "destructive",
-          title: "Audio Processing Error",
-          description: "There was an issue processing the audio data. Please try again."
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    // Execute the async function
-    processAudioData();
-    
-  }, [audioSrc, toast, blobUrl]);
-  
-  // Set up audio event listeners
-  useEffect(() => {
-    const audio = audioRef.current;
-    
-    if (!audio) return;
-    
+    // Set up event listeners
     const handleLoadedMetadata = () => {
-      console.log("Audio metadata loaded, duration:", audio.duration);
       setDuration(audio.duration);
       setIsLoading(false);
     };
@@ -175,141 +30,241 @@ export default function useAudioPlayer(audioSrc: string | null) {
       setCurrentTime(0);
     };
     
-    const handleCanPlayThrough = () => {
-      console.log("Audio can play through");
-      setIsLoading(false);
-    };
-    
-    const handleLoadedData = () => {
-      console.log("Audio data loaded");
-      setIsLoading(false);
-    };
-    
     const handlePlay = () => {
-      console.log("Audio playing");
       setIsPlaying(true);
     };
     
     const handlePause = () => {
-      console.log("Audio paused");
       setIsPlaying(false);
     };
     
     const handleError = (e: Event) => {
       console.error("Audio error:", e);
       setIsLoading(false);
+      setIsPlaying(false);
+      setError(new Error("Audio playback error"));
+      
       toast({
         variant: "destructive",
         title: "Playback Error",
-        description: "There was an error playing the audio. Please try again."
+        description: "Could not play the audio. Please try again."
       });
     };
     
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("loadeddata", handleLoadedData);
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("ended", handleEnded);
-    audio.addEventListener("canplaythrough", handleCanPlayThrough);
     audio.addEventListener("play", handlePlay);
     audio.addEventListener("pause", handlePause);
     audio.addEventListener("error", handleError);
     
     return () => {
+      // Cleanup
+      audio.pause();
+      audio.src = "";
+      
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audio.removeEventListener("loadeddata", handleLoadedData);
       audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("ended", handleEnded);
-      audio.removeEventListener("canplaythrough", handleCanPlayThrough);
       audio.removeEventListener("play", handlePlay);
       audio.removeEventListener("pause", handlePause);
       audio.removeEventListener("error", handleError);
     };
   }, [toast]);
   
+  // Update audio source when it changes
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !audioSrc) return;
+    
+    // Reset state
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setError(null);
+    setIsLoading(true);
+    
+    // Set the source directly if it's not an API URL
+    if (!audioSrc.startsWith('/api/')) {
+      audio.src = audioSrc;
+      audio.load();
+      setIsLoading(false);
+      return;
+    }
+    
+    // For API URLs, fetch the audio data first
+    const fetchAudio = async () => {
+      try {
+        // Get API key if available
+        const apiKey = localStorage.getItem("elevenLabsApiKey");
+        const headers: Record<string, string> = {};
+        
+        if (apiKey) {
+          headers["x-api-key"] = apiKey;
+        }
+        
+        // Fetch the audio
+        const response = await fetch(audioSrc, {
+          headers,
+          credentials: 'same-origin',
+          cache: 'no-cache' // Avoid browser caching
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch audio: ${response.status}`);
+        }
+        
+        // Convert response to blob
+        const blob = await response.blob();
+        
+        // Create object URL from blob
+        const url = URL.createObjectURL(blob);
+        
+        // Set audio source
+        audio.src = url;
+        audio.load();
+        
+        // Clean up object URL when audio is loaded
+        const handleLoaded = () => {
+          audio.removeEventListener('canplaythrough', handleLoaded);
+          setIsLoading(false);
+        };
+        
+        audio.addEventListener('canplaythrough', handleLoaded, { once: true });
+        
+      } catch (error) {
+        console.error("Error fetching audio:", error);
+        setError(error instanceof Error ? error : new Error('Unknown error'));
+        setIsLoading(false);
+        
+        toast({
+          variant: "destructive",
+          title: "Audio Loading Error",
+          description: "Failed to load the audio. Please try again."
+        });
+      }
+    };
+    
+    fetchAudio();
+    
+    // Cleanup function to revoke object URL
+    return () => {
+      const src = audio.src;
+      if (src.startsWith('blob:')) {
+        audio.pause();
+        audio.src = '';
+        URL.revokeObjectURL(src);
+      }
+    };
+  }, [audioSrc, toast]);
+  
   // Toggle play/pause
   const togglePlay = async () => {
-    if (!audioRef.current) return;
+    const audio = audioRef.current;
+    if (!audio) return;
     
     try {
       if (isPlaying) {
-        audioRef.current.pause();
+        audio.pause();
       } else {
-        const playPromise = audioRef.current.play();
-        
-        // Modern browsers return a promise from play()
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              console.log("Audio playback started successfully");
-            })
-            .catch(error => {
-              console.error("Error playing audio:", error);
-              setIsPlaying(false);
-              toast({
-                variant: "destructive",
-                title: "Playback Error",
-                description: "Could not play the audio. Please try again."
-              });
+        // If audio source is an API endpoint and hasn't loaded yet, reload it
+        if (audioSrc?.startsWith('/api/') && (audio.readyState === 0 || audio.error)) {
+          setIsLoading(true);
+          
+          try {
+            // Get API key if available
+            const apiKey = localStorage.getItem("elevenLabsApiKey");
+            const headers: Record<string, string> = {};
+            
+            if (apiKey) {
+              headers["x-api-key"] = apiKey;
+            }
+            
+            const response = await fetch(audioSrc, {
+              headers,
+              credentials: 'same-origin',
+              cache: 'no-cache'
             });
+            
+            if (!response.ok) {
+              throw new Error(`Failed to fetch audio: ${response.status}`);
+            }
+            
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            
+            // Clean up old blob URL if exists
+            if (audio.src.startsWith('blob:')) {
+              URL.revokeObjectURL(audio.src);
+            }
+            
+            audio.src = url;
+            audio.load();
+            
+            // Wait for audio to be loaded
+            await new Promise<void>((resolve) => {
+              const handleCanPlay = () => {
+                audio.removeEventListener('canplaythrough', handleCanPlay);
+                resolve();
+              };
+              audio.addEventListener('canplaythrough', handleCanPlay, { once: true });
+              
+              // Also resolve on error to avoid hanging
+              const handleError = () => {
+                audio.removeEventListener('error', handleError);
+                resolve();
+              };
+              audio.addEventListener('error', handleError, { once: true });
+            });
+            
+            // Try to play
+            await audio.play();
+            
+          } catch (error) {
+            console.error("Error reloading audio:", error);
+            throw error;
+          } finally {
+            setIsLoading(false);
+          }
+        } else {
+          // Normal play
+          await audio.play();
         }
       }
     } catch (error) {
       console.error("Toggle play error:", error);
+      setIsPlaying(false);
+      
       toast({
         variant: "destructive",
         title: "Playback Error",
-        description: "There was an error with the audio playback. Please try again."
+        description: "Could not play the audio. Please try again."
       });
     }
   };
   
   // Restart audio
-  const restart = async () => {
-    if (!audioRef.current) return;
+  const restart = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
     
-    try {
-      audioRef.current.currentTime = 0;
-      
-      if (!isPlaying) {
-        const playPromise = audioRef.current.play();
-        
-        // Modern browsers return a promise from play()
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              console.log("Audio restart successful");
-            })
-            .catch(error => {
-              console.error("Error restarting audio:", error);
-              setIsPlaying(false);
-              toast({
-                variant: "destructive",
-                title: "Playback Error",
-                description: "Could not restart the audio. Please try again."
-              });
-            });
-        }
-      }
-    } catch (error) {
-      console.error("Restart error:", error);
-      toast({
-        variant: "destructive",
-        title: "Playback Error",
-        description: "There was an error restarting the audio. Please try again."
-      });
+    audio.currentTime = 0;
+    
+    if (!isPlaying) {
+      togglePlay();
     }
   };
   
   // Seek to position
   const seek = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (!audioRef.current || !audioSrc) return;
+    const audio = audioRef.current;
+    if (!audio) return;
     
     const element = event.currentTarget;
     const rect = element.getBoundingClientRect();
     const offsetX = event.clientX - rect.left;
     const percentage = offsetX / rect.width;
     
-    audioRef.current.currentTime = percentage * duration;
+    audio.currentTime = percentage * duration;
     setCurrentTime(percentage * duration);
   };
   
@@ -323,22 +278,38 @@ export default function useAudioPlayer(audioSrc: string | null) {
   };
   
   // Download audio file
-  const downloadAudio = (format: string, fileName?: string) => {
+  const downloadAudio = async (format: string, fileName?: string) => {
     if (!audioSrc) {
       toast({
         variant: "destructive",
-        title: "Download Failed",
-        description: "No audio data available for download."
+        title: "Download Failed", 
+        description: "No audio available for download"
       });
       return;
     }
     
     try {
-      // Use the existing blob URL if available, otherwise create a new one
-      if (blobUrl) {
-        // Create a temporary <a> element to trigger download
-        const a = document.createElement("a");
-        a.href = blobUrl;
+      setIsLoading(true);
+      
+      // For API endpoints, trigger the download through the browser
+      if (audioSrc.startsWith('/api/')) {
+        const generationId = audioSrc.split('/').pop();
+        
+        if (!generationId) {
+          throw new Error("Invalid audio URL");
+        }
+        
+        // First, increment download count
+        await fetch(`/api/generations/${generationId}/increment-download`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        // Create a link and trigger the download
+        const a = document.createElement('a');
+        a.href = audioSrc;
         a.download = fileName || `voicecraft-audio.${format}`;
         document.body.appendChild(a);
         a.click();
@@ -348,41 +319,58 @@ export default function useAudioPlayer(audioSrc: string | null) {
           title: "Download Started",
           description: `Your audio is being downloaded in ${format.toUpperCase()} format.`
         });
-      } else {
-        // Extract the base64 data
+      } 
+      // Handle direct blob URLs
+      else if (audioSrc.startsWith('blob:')) {
+        const a = document.createElement('a');
+        a.href = audioSrc;
+        a.download = fileName || `voicecraft-audio.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        toast({
+          title: "Download Started",
+          description: `Your audio is being downloaded in ${format.toUpperCase()} format.`
+        });
+      }
+      // Handle data URLs (base64)
+      else if (audioSrc.startsWith('data:')) {
         const parts = audioSrc.split(',');
         if (parts.length !== 2) {
           throw new Error("Invalid audio data format");
         }
         
         const base64Data = parts[1];
-        
-        // Convert base64 to binary
         const byteCharacters = atob(base64Data);
-        const byteNumbers = new Array(byteCharacters.length);
+        const byteArrays = [];
         
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+          const slice = byteCharacters.slice(offset, offset + 512);
+          
+          const byteNumbers = new Array(slice.length);
+          for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+          }
+          
+          const byteArray = new Uint8Array(byteNumbers);
+          byteArrays.push(byteArray);
         }
         
-        const byteArray = new Uint8Array(byteNumbers);
-        
-        // Use the correct MIME type for the download
         const mimeType = format === 'mp3' ? 'audio/mpeg' : `audio/${format}`;
-        const blob = new Blob([byteArray], { type: mimeType });
-        const downloadUrl = URL.createObjectURL(blob);
+        const blob = new Blob(byteArrays, { type: mimeType });
+        const url = URL.createObjectURL(blob);
         
-        // Create a temporary <a> element to trigger download
-        const a = document.createElement("a");
-        a.href = downloadUrl;
+        const a = document.createElement('a');
+        a.href = url;
         a.download = fileName || `voicecraft-audio.${format}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         
-        // Clean up the download URL
+        // Clean up the URL
         setTimeout(() => {
-          URL.revokeObjectURL(downloadUrl);
+          URL.revokeObjectURL(url);
         }, 100);
         
         toast({
@@ -397,6 +385,8 @@ export default function useAudioPlayer(audioSrc: string | null) {
         title: "Download Failed",
         description: "There was an error downloading the audio. Please try again."
       });
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -410,6 +400,7 @@ export default function useAudioPlayer(audioSrc: string | null) {
     seek,
     formatTime,
     downloadAudio,
-    isLoading
+    isLoading,
+    error
   };
 }
