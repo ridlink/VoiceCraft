@@ -7,10 +7,19 @@ const { Pool } = pkg;
 // Create a connection pool to the database
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: false, // Disable SSL for local development
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
+});
+
+// Log database connection status
+pool.on('connect', () => {
+  console.log('[Database] Connected successfully');
+});
+
+pool.on('error', (err) => {
+  console.error('[Database] Pool error:', err);
 });
 
 // Add error handling for the pool

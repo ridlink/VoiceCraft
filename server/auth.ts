@@ -176,12 +176,22 @@ export function setupAuth(app: Express) {
 
   // Login route
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: any, user: User | false, info: { message?: string } | undefined) => {
+    console.log("[Auth] Login attempt for:", req.body.username);
+    passport.authenticate("local", async (err: any, user: User | false, info: { message?: string } | undefined) => {
       if (err) {
+        console.error("[Auth] Login error:", err);
         return next(err);
       }
       if (!user) {
+        console.error("[Auth] Authentication failed:", info?.message, "for user:", req.body.username);
         return res.status(401).json({ error: info?.message || "Invalid credentials" });
+      }
+      
+      try {
+        const dbUser = await storage.getUserByUsername(req.body.username);
+        console.log("[Auth] Database user found:", dbUser ? "Yes" : "No");
+      } catch (dbErr) {
+        console.error("[Auth] Database error:", dbErr);
       }
       
       req.login(user, (err) => {
