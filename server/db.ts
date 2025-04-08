@@ -8,9 +8,13 @@ const { Pool } = pkg;
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
-  max: 20, // Maximum number of clients in the pool
+  max: 10, // Reduced max connections
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 5000, // Increased timeout
+  keepAlive: true, // Enable keepalive
+  keepAliveInitialDelayMillis: 10000,
+  retryDelay: 1000, // Time between retries
+  maxRetries: 3 // Number of retries
 });
 
 // Log database connection status
