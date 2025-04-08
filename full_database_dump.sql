@@ -266,8 +266,8 @@ COPY public.audio_generations (id, text, voice_id, voice_name, stability, clarit
 --
 
 COPY public.session (sid, sess, expire) FROM stdin;
-2QWGJ4q_dSoxhozKIUgeJx_E6_9Qf7T4	{"cookie":{"originalMaxAge":2592000000,"expires":"2025-05-07T19:51:30.881Z","secure":false,"httpOnly":true,"path":"/"},"passport":{"user":1}}	2025-05-07 19:51:31
-kONKOWGs3dbcZJxZ7m5DxtiKBVgxCw_U	{"cookie":{"originalMaxAge":2592000000,"expires":"2025-05-06T19:30:37.373Z","secure":false,"httpOnly":true,"path":"/"},"passport":{"user":1}}	2025-05-07 11:59:19
+2QWGJ4q_dSoxhozKIUgeJx_E6_9Qf7T4	{"cookie":{"originalMaxAge":2592000000,"expires":"2025-05-07T19:51:30.881Z","secure":false,"httpOnly":true,"path":"/"},"passport":{"user":1}}	2025-05-07 20:15:01
+kONKOWGs3dbcZJxZ7m5DxtiKBVgxCw_U	{"cookie":{"originalMaxAge":2592000000,"expires":"2025-05-06T19:30:37.373Z","secure":false,"httpOnly":true,"path":"/"},"passport":{"user":1}}	2025-05-07 20:15:16
 UjgNTiNSbH3K8VdRHojH63EhY2CSScvE	{"cookie":{"originalMaxAge":2592000000,"expires":"2025-05-07T10:13:16.189Z","secure":false,"httpOnly":true,"path":"/"},"passport":{"user":1}}	2025-05-07 12:08:53
 \.
 
