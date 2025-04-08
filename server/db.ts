@@ -7,7 +7,7 @@ const { Pool } = pkg;
 // Create a connection pool to the database
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: { rejectUnauthorized: false },
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
@@ -29,7 +29,7 @@ pool.on('error', (err) => {
 
 // For drizzle ORM
 const queryClient = postgres(process.env.DATABASE_URL!, {
-  ssl: false, // Disable SSL for local development
+  ssl: { rejectUnauthorized: false },
   max: 20,
 });
 

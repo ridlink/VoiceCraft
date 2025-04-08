@@ -167,8 +167,12 @@ export function setupAuth(app: Express) {
         res.status(201).json(userWithoutPassword);
       });
     } catch (error) {
+      console.error("Registration error:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
+      }
+      if (error instanceof Error) {
+        return res.status(500).json({ error: error.message });
       }
       res.status(500).json({ error: "Registration failed" });
     }
